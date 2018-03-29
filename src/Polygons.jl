@@ -2,8 +2,9 @@ module Polygons
 
 using PyPlot
 import PyCall
+import Base: length, show, angle, isinf
 
-export Polygon
+export Polygon,vertex,interiorangle
 
 
 struct Polygon
@@ -15,37 +16,39 @@ end
 
 Polygon(x::T,y::T,angle) where T = Polygon(x+im*y,angle)
 
-Polygon(x::T,y::T) where T = Polygon(x+im*y,angle(x+im*y))
+Polygon(x::T,y::T) where T = Polygon(x+im*y,interiorangle(x+im*y))
 
-Polygon(w::Vector{Complex128}) = Polygon(w,angle(w))
+Polygon(w::Vector{Complex128}) = Polygon(w,interiorangle(w))
 
 
 vertex(p::Polygon) = p.vert
 
-isinf(p::Polygon) = any(Base.isinf.(vertex(p)))
+isinf(p::Polygon) = any(isinf.(vertex(p)))
 
-function angle(p::Polygon)
+length(p::Polygon) = length(vertex(p))
+
+function interiorangle(p::Polygon)
   if length(p.angle)!=0
     return p.angle
   end
 
   incoming = p.vert - circshift(p.vert,1)
   outgoing = circshift(incoming,-1)
-  return mod.( Base.angle.(-incoming.*conj.(outgoing))/π ,2 )
+  return mod.( angle.(-incoming.*conj.(outgoing))/π ,2 )
 end
 
-function angle(w::Array{Complex128})
+function interiorangle(w::Vector{Complex128})
   if length(w)==0
     return []
   end
 
-  atinf = Base.isinf.(w)
+  atinf = isinf.(w)
   mask = .~(atinf .| circshift(atinf,-1) .| circshift(atinf,1))
 
   dw = diff( [w[end];w] )
   dwshift = circshift(dw,-1)
   beta = fill(NaN,length(w))
-  beta[mask] = Base.angle.( dw[mask].*conj.(dwshift[mask]) )/π
+  beta[mask] = mod.(angle.( -dw[mask].*conj.(dwshift[mask]) )/π,2)
 
   mods = abs.(beta+1) .< 1e-12
   beta[mods] = ones(beta[mods])
@@ -66,7 +69,7 @@ function isinpoly(z::Complex128,w::Vector{Complex128},beta::Vector{Float64},tol)
   z = z/scale
   d = w .- z
   d[abs.(d) .< eps()] .= eps()
-  ang = Base.angle.(circshift(d,-1)./d)/π
+  ang = angle.(circshift(d,-1)./d)/π
   tangents = sign.(circshift(w,-1)-w)
 
   # Search for repeated points and fix these tangents
@@ -97,7 +100,7 @@ isinpoly(z,w,beta) = isinpoly(z,w,beta,eps())
 isinpoly(z,p::Polygon,tol) = isinpoly(z,p.vert,p.angle,tol)
 isinpoly(z,p::Polygon) = isinpoly(z,p::Polygon,eps())
 
-
+winding(z,x...) = float.(isinpoly(z,x...))
 
 
 
@@ -137,7 +140,7 @@ function plot(p::Polygon)
   PyPlot.axis("scaled")
 end
 
-function Base.show(io::IO, p::Polygon)
+function show(io::IO, p::Polygon)
     println(io, "Polygon with $(length(p.vert)) vertices at $(p.vert) ")
     println(io, "             interior angles/π = $(round.(p.angle, 3))")
 end
