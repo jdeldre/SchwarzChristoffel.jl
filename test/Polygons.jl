@@ -1,4 +1,4 @@
-@testset "Polygon" begin
+@testset "Polygons" begin
   xvert = [-1.0,1.0,0.5,-1.0]
   yvert = [-1.0,-1.0,1.0,1.0]
   p = SchwarzChristoffel.Polygon(xvert,yvert)

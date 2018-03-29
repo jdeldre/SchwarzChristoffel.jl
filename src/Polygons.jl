@@ -4,7 +4,7 @@ using PyPlot
 import PyCall
 import Base: length, show, angle, isinf
 
-export Polygon,vertex,interiorangle
+export Polygon,vertex,interiorangle,isinpoly
 
 
 struct Polygon
@@ -27,15 +27,7 @@ isinf(p::Polygon) = any(isinf.(vertex(p)))
 
 length(p::Polygon) = length(vertex(p))
 
-function interiorangle(p::Polygon)
-  if length(p.angle)!=0
-    return p.angle
-  end
-
-  incoming = p.vert - circshift(p.vert,1)
-  outgoing = circshift(incoming,-1)
-  return mod.( angle.(-incoming.*conj.(outgoing))/π ,2 )
-end
+interiorangle(p::Polygon) = length(p.angle) != 0 ? p.angle : interiorangle(p.vertex)
 
 function interiorangle(w::Vector{Complex128})
   if length(w)==0
@@ -45,7 +37,7 @@ function interiorangle(w::Vector{Complex128})
   atinf = isinf.(w)
   mask = .~(atinf .| circshift(atinf,-1) .| circshift(atinf,1))
 
-  dw = diff( [w[end];w] )
+  dw = w - circshift(w,1)
   dwshift = circshift(dw,-1)
   beta = fill(NaN,length(w))
   beta[mask] = mod.(angle.( -dw[mask].*conj.(dwshift[mask]) )/π,2)
