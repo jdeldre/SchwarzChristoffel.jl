@@ -5,21 +5,21 @@ using ..Properties
 using ..Polygons
 using ..Integration
 
-export Extermap
+export ExteriorMap
 
-struct Extermap <: Map
+struct ExteriorMap <: Map
 
   z    :: Vector{Complex128}
   beta :: Vector{Float64}
-  qdat :: Tuple{Array{Float64,2},Array{Float64,2}}
-  tol  :: Float64
+  qdata :: Tuple{Array{Float64,2},Array{Float64,2}}
+  accuracy  :: Float64
 
-  zeta :: Vector{Complex128}
-  C    :: Complex128
+  prevertex :: Vector{Complex128}
+  constant  :: Complex128
 
 end
 
-function Extermap(p::Polygon)
+function ExteriorMap(p::Polygon)
 
   n = length(p.vert)
 
@@ -34,8 +34,28 @@ function Extermap(p::Polygon)
 
   zeta, c = deparam(w,beta,zeta0,qdat)
 
-  Extermap(p.vert,p.angle,qdat,tol,zeta,c)
+  ExteriorMap(p.vert,p.angle,qdat,tol,flipdim(zeta,1),c)
 end
+
+function Base.show(io::IO, map::ExteriorMap)
+    println(io, "Exterior map with $(length(map.z)) vertices at")
+    for i = 1:length(map.z)
+    println(io, "       $(round(map.z[i],4))")
+    end
+    println(io, "   interior angles/π at")
+    for i = 1:length(map.beta)
+    println(io, "       $(round(map.beta[i],4))")
+    end
+    println(io, "   prevertices on circle at")
+    for i = 1:length(map.prevertex)
+    println(io, "       $(round(map.prevertex[i],4))")
+    end
+    println(io, "   constant = $(round(map.constant,4))")
+    println(io, "   accuracy = $(map.accuracy)")
+
+end
+
+parameters(map::ExteriorMap) = map.prevertex, map.constant
 
 struct DabsQuad{n}
   zeta :: Vector{Complex128}
@@ -93,7 +113,7 @@ function (I::DabsQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) wher
    if isempty(sing1)
      sing1 = 0
    end
-   result = 0
+   result = 0.0
    if zeta1 != zeta2
      dist = min(1,2*minimum(abs.([I.zeta[1:sing1-1];I.zeta[sing1+1:n]]-zeta1))/abs(zeta2-zeta1))
      argr = argz1 + dist*(argz2-argz1)
@@ -135,9 +155,10 @@ function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
    if isempty(sing1)
      sing1 = 0
    end
-   result = 0
+   result = Complex128[0]
    if zeta1 != zeta2
-     dist = min(1,2*minimum(abs.([I.zeta[1:sing1-1];I.zeta[sing1+1:n]]-zeta1))/abs(zeta2-zeta1))
+     dist = min(1,2*minimum(abs.([I.zeta[1:sing1-1];I.zeta[sing1+1:n]]-zeta1))/
+                            abs(zeta2-zeta1))
      zetar = zeta1 + dist*(zeta2-zeta1)
      ind = sing1 + (n+1)*(sing1==0)
 
@@ -148,7 +169,7 @@ function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
        terms = hcat(terms,nd)
         if sing1 > 0
             terms[:,sing1] ./= abs.(terms[:,sing1])
-            wt .*= (0.5*abs.(zetar-zeta1)).^I.beta[sing1]
+            wt .*= (0.5*abs.(zetar-zeta1)).^beta[sing1]
         end
         result = transpose(exp.(log.(terms)*beta))*wt
         while dist < 1.0
@@ -192,7 +213,7 @@ function deparam(w::Vector{Complex128},beta::Vector{Float64},
 
     F0 = similar(y0)
     df = OnceDifferentiable(depfun!, y0, F0)
-    sol = nlsolve(depfun!,y0,show_trace = :true)
+    sol = nlsolve(depfun!,y0,show_trace = :false)
 
     zeta, θ = y_to_zeta(sol.zero)
 
