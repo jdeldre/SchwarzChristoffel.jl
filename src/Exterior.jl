@@ -57,6 +57,138 @@ end
 
 parameters(map::ExteriorMap) = map.prevertex, map.constant
 
+function param(w::Vector{Complex128},beta::Vector{Float64},
+                 zeta0::Vector{Complex128},
+                 qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+  # w clockwise
+  # beta turning angles
+
+  n = length(w)
+  if n == 2
+    zeta = [-1,1]
+  else
+    len = abs.(diff(circshift(w,1)))
+    nmlen = abs.(len[3:n-1]/len[2])
+    if isempty(zeta0)
+      y0 = zeros(n-1)
+    else
+      zeta0 = zeta0/zeta0[n]
+      θ = angle.(zeta0)
+      θ[θ.<=0] = θ[θ.<=0] + 2π
+      dt = diff([0;θ[1:n-1];2π])
+      @. y0 = log(dt[1:n-1]/dt[2:n])
+    end
+
+    depfun!(F,y) = depfunfull!(F,y,n,beta,nmlen,qdat)
+
+    F0 = similar(y0)
+    df = OnceDifferentiable(depfun!, y0, F0)
+    sol = nlsolve(depfun!,y0,show_trace = :false)
+
+    zeta, θ = y_to_zeta(sol.zero)
+
+  end
+
+  mid = zeta[1]*exp(0.5*im*angle(zeta[2]/zeta[1]))
+  dequad = DQuad(zeta,beta,qdat)
+  c = (w[2]-w[1])/(dequad(zeta[1],mid,1)-dequad(zeta[2],mid,2))
+
+  return zeta, c
+
+end
+
+function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
+                  beta::Vector{Float64},prev::Vector{Complex128},
+                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+
+  # this assumes zeta inside the unit circle
+
+  if isempty(zeta)
+    nothing
+  end
+
+  n = length(w)
+  neval = length(zeta)
+  tol = 10.0^(-size(qdat[1],1))
+
+  # set up the integrator
+  dequad = DQuad(prev,beta,qdat)
+
+  # initialize the mapped evaluation points
+  wp = zeros(Complex128,neval)
+
+  # find the closest prevertices to each evaluation point and their
+  #  corresponding distances
+  dz = abs.(hcat([zeta for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
+  (dist,ind) = findmin(dz,2)
+  sing = floor.(Int,(ind[:]-1)/neval)+1
+
+  # find any prevertices in the evaluation list and set them equal to
+  #  the corresponding vertices. The origin is also a singular point
+  vertex = (dist[:] .< tol)
+  wp[vertex] = w[sing[vertex]]
+  zerop = abs.(zeta) .< tol
+  wp[zerop] = Inf
+  vertex = vertex .| zerop
+
+  # the starting (closest) singularities for each evaluation point
+  prevs = prev[sing]
+
+  # set the initial values of the non-vertices
+  wp[.!vertex] = w[sing[.!vertex]]
+
+  # distance to singularity at the origin
+  abszeta = abs.(zeta)
+
+  # unfinished cases
+  unf = .!vertex
+
+  # set the integration starting points
+  zetaold = copy(prevs)
+  zetanew = copy(zetaold)
+  dist = ones(neval)
+  while any(unf)
+    # distance to integrate still
+    dist[unf] = min.(1,2*abszeta[unf]./abs.(zeta[unf]-zetaold[unf]))
+
+    # new integration end point
+    zetanew[unf] = zetaold[unf] + dist[unf].*(zeta[unf]-zetaold[unf])
+
+    # integrate
+    wp[unf] = wp[unf] + c*dequad.(zetaold[unf],zetanew[unf],sing[unf])
+
+    # set new starting integration points for those that can be integrated
+    #  further
+    unf = dist .< 1
+    zetaold[unf] = zetanew[unf]
+
+    # only the first step can have a singularity
+    sing .= 0
+
+  end
+
+  return wp
+
+end
+
+function evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
+
+  if inside
+    return evaluate(zeta,flipdim(map.vertex,1),1.-flipdim(map.angle,1),
+            map.prevertex,map.constant,map.qdata)
+  else
+    b = -map.constant/abs(map.constant)
+    zeta[zeta.==0] = eps();
+    zeta[abs.(zeta).<1] = zeta[abs.(zeta).<1]./abs.(zeta[abs.(zeta).<1])
+
+    sigma = b./zeta
+    return evaluate(sigma,flipdim(map.vertex,1),1.-flipdim(map.angle,1),
+            map.prevertex,map.constant,map.qdata)
+  end
+end
+
+evaluate(zeta::Vector{Complex128},map::ExteriorMap) = evaluate(zeta,map,false)
+
 struct DabsQuad{n}
   zeta :: Vector{Complex128}
   beta :: Vector{Float64}
@@ -189,121 +321,7 @@ function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
 end
 
 
-function param(w::Vector{Complex128},beta::Vector{Float64},
-                 zeta0::Vector{Complex128},
-                 qdat::Tuple{Array{Float64,2},Array{Float64,2}})
-  # w clockwise
-  # beta turning angles
 
-  n = length(w)
-  if n == 2
-    zeta = [-1,1]
-  else
-    len = abs.(diff(circshift(w,1)))
-    nmlen = abs.(len[3:n-1]/len[2])
-    if isempty(zeta0)
-      y0 = zeros(n-1)
-    else
-      zeta0 = zeta0/zeta0[n]
-      θ = angle.(zeta0)
-      θ[θ.<=0] = θ[θ.<=0] + 2π
-      dt = diff([0;θ[1:n-1];2π])
-      @. y0 = log(dt[1:n-1]/dt[2:n])
-    end
-
-    depfun!(F,y) = depfunfull!(F,y,n,beta,nmlen,qdat)
-
-    F0 = similar(y0)
-    df = OnceDifferentiable(depfun!, y0, F0)
-    sol = nlsolve(depfun!,y0,show_trace = :false)
-
-    zeta, θ = y_to_zeta(sol.zero)
-
-  end
-
-  mid = zeta[1]*exp(0.5*im*angle(zeta[2]/zeta[1]))
-  dequad = DQuad(zeta,beta,qdat)
-  c = (w[2]-w[1])/(dequad(zeta[1],mid,1)-dequad(zeta[2],mid,2))
-
-  return zeta, c
-
-end
-
-function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
-                  beta::Vector{Float64},prev::Vector{Complex128},
-                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
-
-  if isempty(zeta)
-    nothing
-  end
-
-  n = length(w)
-  neval = length(zeta)
-  tol = 10.0^(-size(qdat[1],1))
-
-  # set up the integrator
-  dequad = DQuad(prev,beta,qdat)
-
-  # initialize the mapped evaluation points
-  wp = zeros(Complex128,neval)
-
-  # find the closest prevertices to each evaluation point and their
-  #  corresponding distances
-  dz = abs.(hcat([zeta for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
-  (dist,ind) = findmin(dz,2)
-  sing = floor.(Int,(ind[:]-1)/neval)+1
-
-  # find any prevertices in the evaluation list and set them equal to
-  #  the corresponding vertices. The origin is also a singular point
-  vertex = (dist[:] .< tol)
-  wp[vertex] = w[sing[vertex]]
-  zerop = abs.(zeta) .< tol
-  wp[zerop] = Inf
-  vertex = vertex .| zerop
-
-  # the starting (closest) singularities for each evaluation point
-  prevs = prev[sing]
-
-  # set the initial values of the non-vertices
-  wp[.!vertex] = w[sing[.!vertex]]
-
-  # distance to singularity at the origin
-  abszeta = abs.(zeta)
-
-  # unfinished cases
-  unf = .!vertex
-
-  # set the integration starting points
-  zetaold = copy(prevs)
-  zetanew = copy(zetaold)
-  dist = ones(neval)
-  while any(unf)
-    # distance to integrate still
-    dist[unf] = min.(1,2*abszeta[unf]./abs.(zeta[unf]-zetaold[unf]))
-
-    # new integration end point
-    zetanew[unf] = zetaold[unf] + dist[unf].*(zeta[unf]-zetaold[unf])
-
-    # integrate
-    wp[unf] = wp[unf] + c*dequad.(zetaold[unf],zetanew[unf],sing[unf])
-
-    # set new starting integration points for those that can be integrated
-    #  further
-    unf = dist .< 1
-    zetaold[unf] = zetanew[unf]
-
-    # only the first step can have a singularity
-    sing .= 0
-
-  end
-
-  return wp
-
-end
-
-evaluate(zeta::Vector{Complex128},map::ExteriorMap) =
-  evaluate(zeta,flipdim(map.vertex,1),1.-flipdim(map.angle,1),
-            map.prevertex,map.constant,map.qdata)
 
 function depfunfull!(F,y,n,beta,nmlen,qdat)
 
