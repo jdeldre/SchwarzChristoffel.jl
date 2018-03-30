@@ -178,7 +178,10 @@ function evalderiv(zeta::Vector{Complex128},beta::Vector{Float64},
     neval = length(zeta)
     beta = [beta;-2]
     terms = [hcat([1 .- zeta/prev[i] for i = 1:n]...) zeta]
-    return c*exp.(log.(terms)*beta)
+    dz = c*exp.(log.(terms)*beta)
+    terms2 = [[-beta[i]/prev[i] for i = 1:n];beta[n+1]]
+    ddz = dz.*((1.0./terms)*terms2)
+    return dz, ddz
 
 end
 
@@ -210,9 +213,12 @@ function evalderiv(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
     zeta[abs.(zeta).<1] = zeta[abs.(zeta).<1]./abs.(zeta[abs.(zeta).<1])
 
     sigma = b./zeta
-    dz = evalderiv(sigma,1.-flipdim(map.angle,1),map.prevertex,map.constant)
-    dz .*= -b./zeta.^2
-    return dz
+    dsigma = -sigma./zeta
+    ddsigma = -2.0*dsigma./zeta
+    dz, ddz = evalderiv(sigma,1.-flipdim(map.angle,1),map.prevertex,map.constant)
+    ddz = ddz.*dsigma.^2 + dz.*ddsigma
+    dz .*= dsigma
+    return dz, ddz
   end
 end
 
