@@ -5,7 +5,7 @@ using ..Properties
 using ..Polygons
 using ..Integration
 
-export ExteriorMap
+export ExteriorMap,evaluate,parameters
 
 struct ExteriorMap <: Map
 

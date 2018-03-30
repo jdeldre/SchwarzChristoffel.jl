@@ -4,7 +4,7 @@ using PyPlot
 import PyCall
 import Base: length, show, angle, isinf
 
-export Polygon,vertex,interiorangle,isinpoly
+export Polygon,vertex,interiorangle,isinpoly,plot
 
 
 struct Polygon
