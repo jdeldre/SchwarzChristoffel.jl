@@ -32,9 +32,9 @@ function ExteriorMap(p::Polygon)
   nqpts = max(ceil(Int,-log10(tol)),2)
   qdat = qdata(beta,nqpts)
 
-  zeta, c = deparam(w,beta,zeta0,qdat)
+  zeta, c = param(w,beta,zeta0,qdat)
 
-  ExteriorMap(p.vert,p.angle,qdat,tol,flipdim(zeta,1),c)
+  ExteriorMap(p.vert,p.angle,qdat,tol,zeta,c)
 end
 
 function Base.show(io::IO, map::ExteriorMap)
@@ -47,7 +47,7 @@ function Base.show(io::IO, map::ExteriorMap)
     println(io, "       $(round(map.beta[i],4))")
     end
     println(io, "   prevertices on circle at")
-    for i = 1:length(map.prevertex)
+    for i = length(map.prevertex):-1:1
     println(io, "       $(round(map.prevertex[i],4))")
     end
     println(io, "   constant = $(round(map.constant,4))")
@@ -115,7 +115,8 @@ function (I::DabsQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) wher
    end
    result = 0.0
    if zeta1 != zeta2
-     dist = min(1,2*minimum(abs.([I.zeta[1:sing1-1];I.zeta[sing1+1:n]]-zeta1))/abs(zeta2-zeta1))
+     zetas = [I.zeta[1:sing1-1];I.zeta[sing1+1:end]]
+     dist = min(1,2*minimum(abs.(zetas-zeta1))/abs(zeta2-zeta1))
      argr = argz1 + dist*(argz2-argz1)
      ind = ((sing1+n) % (n+1)) + 1
      nd = 0.5*((argr-argz1)*qnode[:,ind] + argr + argz1)
@@ -131,8 +132,8 @@ function (I::DabsQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) wher
         result = transpose(exp.(log.(terms)*I.beta))*wt
         while dist < 1.0
             argl = argr
-            zl = exp(im*argl)
-            dist = min(1,2*minimum(abs.(I.zeta-zl)/abs(zl-zeta2)))
+            zetal = exp(im*argl)
+            dist = min(1,2*minimum(abs.(I.zeta-zetal)/abs(zetal-zeta2)))
             argr = argl + dist*(arg2-argl)
             nd = 0.5*((argr-argl)*qnode[:,n+1] + argr + argl)
             wt = 0.5*abs(argr-argl)*qwght[:,n+1]
@@ -157,8 +158,8 @@ function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
    end
    result = Complex128[0]
    if zeta1 != zeta2
-     dist = min(1,2*minimum(abs.([I.zeta[1:sing1-1];I.zeta[sing1+1:n]]-zeta1))/
-                            abs(zeta2-zeta1))
+     zetas = [I.zeta[1:sing1-1];I.zeta[sing1+1:end]]
+     dist = min(1,2*minimum(abs.(zetas-zeta1))/abs(zeta2-zeta1))
      zetar = zeta1 + dist*(zeta2-zeta1)
      ind = sing1 + (n+1)*(sing1==0)
 
@@ -188,7 +189,7 @@ function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
 end
 
 
-function deparam(w::Vector{Complex128},beta::Vector{Float64},
+function param(w::Vector{Complex128},beta::Vector{Float64},
                  zeta0::Vector{Complex128},qdat)
   # w clockwise
   # beta turning angles
@@ -224,6 +225,76 @@ function deparam(w::Vector{Complex128},beta::Vector{Float64},
   c = (w[2]-w[1])/(dequad(zeta[1],mid,1)-dequad(zeta[2],mid,2))
 
   return zeta, c
+
+end
+
+function map(zeta,w,beta,prev,c,qdat)
+
+  if isempty(zeta)
+    nothing
+  end
+
+  n = length(w)
+  neval = length(zeta)
+  tol = 10.0^(-size(qdat[1],1))
+
+  # set up the integrator
+  dequad = DQuad(prev,beta,qdat)
+
+  # initialize the mapped evaluation points
+  wp = zeros(Complex128,neval)
+
+  # find the closest prevertices to each evaluation point and their
+  #  corresponding distances
+  dz = abs.(hcat([zeta for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
+  (dist,ind) = findmin(dz,2)
+  sing = floor.(Int,(ind[:]-1)/neval)+1
+
+  # find any prevertices in the evaluation list and set them equal to
+  #  the corresponding vertices. The origin is also a singular point
+  vertex = (dist[:] .< tol)
+  wp[vertex] = w[sing[vertex]]
+  zerop = abs.(zeta) .< tol
+  wp[zerop] = Inf
+  vertex = vertex .| zerop
+
+  # the starting (closest) singularities for each evaluation point
+  prevs = prev[sing]
+
+  # set the initial values of the non-vertices
+  wp[.!vertex] = w[sing[.!vertex]]
+
+  # distance to singularity at the origin
+  abszeta = abs.(zeta)
+
+  # unfinished cases
+  unf = .!vertex
+
+  # set the integration starting points
+  zetaold = copy(prevs)
+  zetanew = copy(zetaold)
+  dist = ones(neval)
+  while any(unf)
+    # distance to integrate still
+    dist[unf] = min.(1,2*abszeta[unf]./abs.(zeta[unf]-zetaold[unf]))
+
+    # new integration end point
+    zetanew[unf] = zetaold[unf] + dist[unf].*(zeta[unf]-zetaold[unf])
+
+    # integrate
+    wp[unf] = wp[unf] + c*dequad.(zetaold[unf],zetanew[unf],sing[unf])
+
+    # set new starting integration points for those that can be integrated
+    #  further
+    unf = dist .< 1
+    zetaold[unf] = zetanew[unf]
+
+    # only the first step can have a singularity
+    sing .= 0
+
+  end
+
+  return wp
 
 end
 
