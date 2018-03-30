@@ -5,7 +5,7 @@ using ..Properties
 using ..Polygons
 using ..Integration
 
-export Extermap,dabsquad
+export Extermap
 
 struct Extermap <: Map
 
@@ -32,7 +32,7 @@ function Extermap(p::Polygon)
   nqpts = max(ceil(Int,-log10(tol)),2)
   qdat = qdata(beta,nqpts)
 
-  zeta, c = deparam(w,beta,zeta0)
+  zeta, c = deparam(w,beta,zeta0,qdat)
 
   Extermap(p.vert,p.angle,qdat,tol,zeta,c)
 end
@@ -55,6 +55,26 @@ function DabsQuad(zeta::Vector{Complex128},beta::Vector{Float64},qdat::Tuple{Arr
   n = length(zeta)
   nqpts = size(qdat[1],1)
   DabsQuad{n}(zeta,beta,nqpts,qdat)
+end
+
+struct DQuad{n}
+  zeta :: Vector{Complex128}
+  beta :: Vector{Float64}
+  nqpts :: Int64
+  qdat :: Tuple{Array{Float64,2},Array{Float64,2}}
+end
+
+function DQuad(zeta::Vector{Complex128},beta::Vector{Float64},tol::Float64)
+  n = length(zeta)
+  nqpts = max(ceil(Int,-log10(tol)),2)
+  qdat = qdata(beta,nqpts)
+  DQuad{n}(zeta,beta,nqpts,qdat)
+end
+
+function DQuad(zeta::Vector{Complex128},beta::Vector{Float64},qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+  n = length(zeta)
+  nqpts = size(qdat[1],1)
+  DQuad{n}(zeta,beta,nqpts,qdat)
 end
 
 
@@ -88,7 +108,7 @@ function (I::DabsQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) wher
             terms[:,sing1] ./= abs.(nd-argz1)
             wt .*= (0.5*abs.(argr-argz1)).^I.beta[sing1]
         end
-        result = dot(exp.(log.(terms)*I.beta),wt)
+        result = transpose(exp.(log.(terms)*I.beta))*wt
         while dist < 1.0
             argl = argr
             zl = exp(im*argl)
@@ -98,10 +118,51 @@ function (I::DabsQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) wher
             wt = 0.5*abs(argr-argl)*qwght[:,n+1]
             θ = hcat([(nd - argz[i] + 2π).%(2π) for i = 1:n]...)
             θ[θ.>π] = 2π-θ[θ.>π]
-            result += dot(exp.(log.(2sin.*(0.5θ))*I.beta),wt)
+            terms = 2sin.(0.5θ)
+            result += transpose(exp.(log.(terms)*I.beta))*wt
         end
     end
    end
+   return result
+end
+
+function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
+
+   (qnode,qwght) = I.qdat
+
+   beta = [I.beta;-2]
+
+   if isempty(sing1)
+     sing1 = 0
+   end
+   result = 0
+   if zeta1 != zeta2
+     dist = min(1,2*minimum(abs.([I.zeta[1:sing1-1];I.zeta[sing1+1:n]]-zeta1))/abs(zeta2-zeta1))
+     zetar = zeta1 + dist*(zeta2-zeta1)
+     ind = sing1 + (n+1)*(sing1==0)
+
+     nd = 0.5*((zetar-zeta1)*qnode[:,ind] + zetar + zeta1)
+     wt = 0.5*(zetar-zeta1)*qwght[:,ind]
+     terms = hcat([1 .- nd/I.zeta[i] for i = 1:n]...)
+     if !any(terms==0.0)
+       terms = hcat(terms,nd)
+        if sing1 > 0
+            terms[:,sing1] ./= abs.(terms[:,sing1])
+            wt .*= (0.5*abs.(zetar-zeta1)).^I.beta[sing1]
+        end
+        result = transpose(exp.(log.(terms)*beta))*wt
+        while dist < 1.0
+            zetal = zetar
+            dist = min(1,2*minimum(abs.(I.zeta-zetal)/abs(zetal-zeta2)))
+            zetar = zetal + dist*(zeta2-zetal)
+            nd = 0.5*((zetar-zetal)*qnode[:,n+1] + zetar + zetal)
+            wt = 0.5*(zetar-zetal)*qwght[:,n+1]
+            terms = hcat([1 .- nd/I.zeta[i] for i = 1:n]...)
+            terms = hcat(terms,nd)
+            result += transpose(exp.(log.(terms)*beta))*wt
+        end
+      end
+    end
    return result
 end
 
@@ -138,9 +199,8 @@ function deparam(w::Vector{Complex128},beta::Vector{Float64},
   end
 
   mid = zeta[1]*exp(0.5*im*angle(zeta[2]/zeta[1]))
-  dabsquad = DabsQuad(zeta,beta,qdat)
-  c = 0.0
-  #c = (w[2]-w[1])/(dequad(zeta[1],mid,1)-dequad(zeta[2],mid,2))
+  dequad = DQuad(zeta,beta,qdat)
+  c = (w[2]-w[1])/(dequad(zeta[1],mid,1)-dequad(zeta[2],mid,2))
 
   return zeta, c
 
