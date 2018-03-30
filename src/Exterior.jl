@@ -9,9 +9,9 @@ export ExteriorMap
 
 struct ExteriorMap <: Map
 
-  z    :: Vector{Complex128}
-  beta :: Vector{Float64}
-  qdata :: Tuple{Array{Float64,2},Array{Float64,2}}
+  vertex :: Vector{Complex128}
+  angle  :: Vector{Float64}
+  qdata  :: Tuple{Array{Float64,2},Array{Float64,2}}
   accuracy  :: Float64
 
   prevertex :: Vector{Complex128}
@@ -38,13 +38,13 @@ function ExteriorMap(p::Polygon)
 end
 
 function Base.show(io::IO, map::ExteriorMap)
-    println(io, "Exterior map with $(length(map.z)) vertices at")
-    for i = 1:length(map.z)
-    println(io, "       $(round(map.z[i],4))")
+    println(io, "Exterior map with $(length(map.vertex)) vertices at")
+    for i = 1:length(map.vertex)
+    println(io, "       $(round(map.vertex[i],4))")
     end
     println(io, "   interior angles/π at")
-    for i = 1:length(map.beta)
-    println(io, "       $(round(map.beta[i],4))")
+    for i = 1:length(map.angle)
+    println(io, "       $(round(map.angle[i],4))")
     end
     println(io, "   prevertices on circle at")
     for i = length(map.prevertex):-1:1
@@ -190,7 +190,8 @@ end
 
 
 function param(w::Vector{Complex128},beta::Vector{Float64},
-                 zeta0::Vector{Complex128},qdat)
+                 zeta0::Vector{Complex128},
+                 qdat::Tuple{Array{Float64,2},Array{Float64,2}})
   # w clockwise
   # beta turning angles
 
@@ -228,7 +229,9 @@ function param(w::Vector{Complex128},beta::Vector{Float64},
 
 end
 
-function map(zeta,w,beta,prev,c,qdat)
+function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
+                  beta::Vector{Float64},prev::Vector{Complex128},
+                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
   if isempty(zeta)
     nothing
@@ -298,6 +301,9 @@ function map(zeta,w,beta,prev,c,qdat)
 
 end
 
+evaluate(zeta::Vector{Complex128},map::ExteriorMap) =
+  evaluate(zeta,flipdim(map.vertex,1),1.-flipdim(map.angle,1),
+            map.prevertex,map.constant,map.qdata)
 
 function depfunfull!(F,y,n,beta,nmlen,qdat)
 
