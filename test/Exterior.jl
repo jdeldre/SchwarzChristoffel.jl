@@ -21,10 +21,18 @@
         Complex128[-6.934402676 - 7.689645145im,
                     0.043977374 - 1.112493651im,
                     2.411813129 - 0.044778980im]
+  @test SchwarzChristoffel.evalderiv(zeta,map,true) ≈
+        Complex128[67.206798225 + 76.628383817im,
+                   -1.116655325 + 0.544575954im,
+                    3.991294846 - 5.306406913im]
   zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im]
   @test SchwarzChristoffel.evaluate(zeta,map,false) ≈
         Complex128[ 0.816139620 + 3.029559043im,
                    -2.252366325 - 2.085230469im,
                    -0.333104076 + 0.975837123im]
+  @test SchwarzChristoffel.evalderiv(zeta,map,false) ≈
+        Complex128[ 1.030528002 + 0.004449924im,
+                    1.006955879 - 0.011501136im,
+                    1.300781073 - 0.266624652im]
 
 end

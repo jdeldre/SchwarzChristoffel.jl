@@ -5,7 +5,7 @@ using ..Properties
 using ..Polygons
 using ..Integration
 
-export ExteriorMap,evaluate,parameters
+export ExteriorMap,evaluate,evalderiv,parameters
 
 struct ExteriorMap <: Map
 
@@ -171,6 +171,17 @@ function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
 
 end
 
+function evalderiv(zeta::Vector{Complex128},beta::Vector{Float64},
+                  prev::Vector{Complex128},c::Complex128)
+
+    n = length(prev)
+    neval = length(zeta)
+    beta = [beta;-2]
+    terms = [hcat([1 .- zeta/prev[i] for i = 1:n]...) zeta]
+    return c*exp.(log.(terms)*beta)
+
+end
+
 function evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
 
   if inside
@@ -188,6 +199,25 @@ function evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
 end
 
 evaluate(zeta::Vector{Complex128},map::ExteriorMap) = evaluate(zeta,map,false)
+
+function evalderiv(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
+
+  if inside
+    return evalderiv(zeta,1.-flipdim(map.angle,1),map.prevertex,map.constant)
+  else
+    b = -map.constant/abs(map.constant)
+    zeta[zeta.==0] = eps();
+    zeta[abs.(zeta).<1] = zeta[abs.(zeta).<1]./abs.(zeta[abs.(zeta).<1])
+
+    sigma = b./zeta
+    dz = evalderiv(sigma,1.-flipdim(map.angle,1),map.prevertex,map.constant)
+    dz .*= -b./zeta.^2
+    return dz
+  end
+end
+
+evalderiv(zeta::Vector{Complex128},map::ExteriorMap) = evalderiv(zeta,map,false)
+
 
 struct DabsQuad{n}
   zeta :: Vector{Complex128}
