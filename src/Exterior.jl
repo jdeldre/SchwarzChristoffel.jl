@@ -224,6 +224,65 @@ end
 
 evalderiv(zeta::Vector{Complex128},map::ExteriorMap) = evalderiv(zeta,map,false)
 
+function getcoefflist(power,div,th1)
+  # Find the set of multi-indices k for which
+  # sum(k(t)*t) = power/div.  The dimension of
+  # the multi-index is set automatically to power/div
+
+  if power%div!=0
+    error("Indivisible power")
+  end
+  pow = Int(power/div)
+  karray = [1]
+  for j = 2:pow
+    karray = madvance(karray)
+  end
+
+  # Find the coefficient for 1/zeta^(pow-1) in the fhat expansion
+  coeff = 0
+  for j = 1:size(karray,1)
+    sumk = sum(karray[j,:])
+    fact = 1
+    for l = 1:pow
+      kl = karray[j,l]
+      fact *= (cos(div*l*th1))^kl/factorial(kl)/l^kl
+    end
+    coeff += fact*(-1)^sumk
+  end
+  return -coeff/(power-1)
+
+end
+
+
+function madvance(P)
+  # Given a set P of multi-indices
+  # that satisfy a certain moment condition
+  # |p|_1 = m (for all p in P), find the set Pplus1
+  # that satisfies |p'|_1 = m+1 (for all p' in Pplus1)
+  nP = size(P,1)
+  m = size(P,2)
+  Ppad = [ones(nP) P zeros(nP)]
+  rows = 0
+  Pplus1 = Int64[]
+  for k = 1:nP
+    # Loop through each index in the kth
+    #  member of P, and find non-zero indices for shifting
+    for j = m:-1:0
+      if Ppad[k,j+1] == 1
+        rows += 1
+        Pplus1 = [Pplus1;zeros(Int64,1,m+2)]
+        Pplus1[rows,1:m+2] = Ppad[k,1:m+2]
+        Pplus1[rows,j+2] = Pplus1[rows,j+2]+1
+        Pplus1[rows,j+1] = Pplus1[rows,j+1]-1
+      end
+    end
+  end
+  Pplus1 = Pplus1[:,2:end]
+  Pplus1 = sortrows(Pplus1)
+  dP = sum(abs.([transpose(Pplus1[1,:]);diff(Pplus1,1)]),2)
+  return Pplus1[dP[:].!=0,:]
+
+end
 
 struct DabsQuad{n}
   zeta :: Vector{Complex128}
@@ -239,7 +298,8 @@ function DabsQuad(zeta::Vector{Complex128},beta::Vector{Float64},tol::Float64)
   DabsQuad{n}(zeta,beta,nqpts,qdat)
 end
 
-function DabsQuad(zeta::Vector{Complex128},beta::Vector{Float64},qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+function DabsQuad(zeta::Vector{Complex128},beta::Vector{Float64},
+                  qdat::Tuple{Array{Float64,2},Array{Float64,2}})
   n = length(zeta)
   nqpts = size(qdat[1],1)
   DabsQuad{n}(zeta,beta,nqpts,qdat)
@@ -259,7 +319,8 @@ function DQuad(zeta::Vector{Complex128},beta::Vector{Float64},tol::Float64)
   DQuad{n}(zeta,beta,nqpts,qdat)
 end
 
-function DQuad(zeta::Vector{Complex128},beta::Vector{Float64},qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+function DQuad(zeta::Vector{Complex128},beta::Vector{Float64},
+               qdat::Tuple{Array{Float64,2},Array{Float64,2}})
   n = length(zeta)
   nqpts = size(qdat[1],1)
   DQuad{n}(zeta,beta,nqpts,qdat)
