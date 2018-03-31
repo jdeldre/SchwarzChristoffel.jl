@@ -9,11 +9,11 @@
 This package requires Julia `0.6-` and above.
 It is not a registered package, so it should be installed with:
 ```julia
-julia> Pkg.clone("git@github.com:darwindarak/PotentialFlow.jl.git")
+julia> Pkg.clone("git@github.com:jdeldre/SchwarzChristoffel.jl.git")
 ```
 Since it is still under heavy development, you should run
 ```julia
-julia> Pkg.test("PotentialFlow") # might take some time
+julia> Pkg.test("SchwarzChristoffel") # might take some time
 ```
 to make sure things are working as intended and
 ```julia
