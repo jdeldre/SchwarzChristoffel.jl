@@ -6,7 +6,11 @@ import Base: length, show, angle, isinf
 
 export Polygon,vertex,interiorangle,isinpoly,plot
 
+"""
+    Polygon(x,y)
 
+Creates a polygon shape with vertices specified in the arrays `x` and `y`.
+"""
 struct Polygon
   vert :: Vector{Complex128}
   angle :: Vector{Float64}
