@@ -5,7 +5,8 @@ using ..Properties
 using ..Polygons
 using ..Integration
 
-export ExteriorMap,evaluate,evalderiv,parameters
+export ExteriorMap,evaluate,evalderiv,parameters,coefficients,
+        moments,area,centroid,Jmoment
 
 struct ExteriorMap <: Map
 
@@ -17,14 +18,24 @@ struct ExteriorMap <: Map
   prevertex :: Vector{Complex128}
   constant  :: Complex128
 
+  preprev   :: Vector{Complex128}
+  prevangle :: Vector{Float64}
+  ncoeff    :: Int64
+  ccoeff    :: Vector{Complex128}
+  dcoeff    :: Vector{Complex128}
+  mom       :: Vector{Complex128}
+
+  area      :: Float64
+  Zc        :: Complex128
+  J         :: Float64
+
 end
 
-function ExteriorMap(p::Polygon)
+function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
 
   n = length(p.vert)
 
   zeta0 = Complex128[]
-  tol = 1e-8
 
   w = flipdim(vertex(p),1)
   beta = 1.-flipdim(interiorangle(p),1)
@@ -33,8 +44,44 @@ function ExteriorMap(p::Polygon)
   qdat = qdata(beta,nqpts)
 
   zeta, c = param(w,beta,zeta0,qdat)
+  preprev = -c/abs(c)./flipdim(zeta,1)
+  prevangle = angle.(preprev)
 
-  ExteriorMap(p.vert,p.angle,qdat,tol,zeta,c)
+  # compute geometric stuff
+  z = vertex(p)
+  zmid = 0.5*(z+circshift(z,-1))
+  dz = circshift(z,-1)-z
+  area = 0.5*imag(sum(conj.(zmid).*dz))
+  if area > 0
+    Zc = -0.5im/area*sum(dz.*(abs.(zmid).^2+abs.(dz).^2/12))
+  else
+    Zc = mean.(z)
+  end
+  J = 0.25*imag(sum(conj.(zmid).*dz.*(abs.(zmid).^2+abs.(dz).^2/12)))
+
+  zetainf = Complex128[100.0]
+  sigmainf = -c/abs(c)./zetainf
+  zinf = evaluate(sigmainf,w,beta,zeta,c,qdat)
+  a = zinf[1] - abs(c)*zetainf[1]
+
+  # first two entries are for c₁ and c₀.
+  beta = flipdim(beta,1)
+  ccoeff = Complex128[abs(c),a]
+  mom = [sum(beta.*preprev)]
+  for k = 1:ncoeff
+    push!(mom,sum(beta.*preprev.^(k+1)))
+    coeffk = abs(c)*getcoefflist(k+1,1,mom);
+    push!(ccoeff,coeffk)
+  end
+
+  # first entry is d₀
+  dcoeff = [dot(ccoeff,ccoeff)]
+  for k = 1:ncoeff+1
+    push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
+  end
+
+  ExteriorMap(p.vert,p.angle,qdat,tol,zeta,c,preprev,prevangle,
+              ncoeff,ccoeff,dcoeff,mom,area,Zc,J)
 end
 
 function Base.show(io::IO, map::ExteriorMap)
@@ -42,7 +89,7 @@ function Base.show(io::IO, map::ExteriorMap)
     for i = 1:length(map.vertex)
     println(io, "       $(round(map.vertex[i],4))")
     end
-    println(io, "   interior angles/π at")
+    println(io, "   interior angles/π")
     for i = 1:length(map.angle)
     println(io, "       $(round(map.angle[i],4))")
     end
@@ -52,10 +99,20 @@ function Base.show(io::IO, map::ExteriorMap)
     end
     println(io, "   constant = $(round(map.constant,4))")
     println(io, "   accuracy = $(map.accuracy)")
+    println(io, "   number of multipole coefficients = $(map.ncoeff)")
 
 end
 
-parameters(map::ExteriorMap) = map.prevertex, map.constant
+parameters(map::ExteriorMap) = flipdim(map.prevertex,1), map.constant
+
+coefficients(map::ExteriorMap) = map.ccoeff, map.dcoeff
+
+moments(map::ExteriorMap) = map.mom
+
+area(map::ExteriorMap) = map.area
+centroid(map::ExteriorMap) = map.Zc
+Jmoment(map::ExteriorMap) = map.J
+
 
 function param(w::Vector{Complex128},beta::Vector{Float64},
                  zeta0::Vector{Complex128},
@@ -65,7 +122,7 @@ function param(w::Vector{Complex128},beta::Vector{Float64},
 
   n = length(w)
   if n == 2
-    zeta = [-1,1]
+    zeta = Complex128[-1,1]
   else
     len = abs.(diff(circshift(w,1)))
     nmlen = abs.(len[3:n-1]/len[2])
@@ -224,32 +281,35 @@ end
 
 evalderiv(zeta::Vector{Complex128},map::ExteriorMap) = evalderiv(zeta,map,false)
 
-function getcoefflist(power,div,th1)
-  # Find the set of multi-indices k for which
-  # sum(k(t)*t) = power/div.  The dimension of
-  # the multi-index is set automatically to power/div
+function getcoefflist(power,div,mom)
+
+  # mom are the moments, mom[1] is M₁, etc
 
   if power%div!=0
     error("Indivisible power")
   end
   pow = Int(power/div)
-  karray = [1]
+
+  # Find the set of multi-indices I for which
+  # sum(k(t)*t) = power/div. Each row of I corresponds
+  # to a different multi-index in the set
+  I = [1]
   for j = 2:pow
-    karray = madvance(karray)
+    I = madvance(I)
   end
 
   # Find the coefficient for 1/zeta^(pow-1) in the fhat expansion
   coeff = 0
-  for j = 1:size(karray,1)
-    sumk = sum(karray[j,:])
+  for j = 1:size(I,1)
+    sumI = sum(I[j,:])
     fact = 1
     for l = 1:pow
-      kl = karray[j,l]
-      fact *= (cos(div*l*th1))^kl/factorial(kl)/l^kl
+      il = I[j,l]
+      fact *= mom[l]^il/factorial(il)/l^il
     end
-    coeff += fact*(-1)^sumk
+    coeff += fact*(-1)^sumI
   end
-  return -coeff/(power-1)
+  return -coeff/(pow-1)
 
 end
 

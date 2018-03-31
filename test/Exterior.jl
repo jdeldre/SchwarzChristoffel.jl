@@ -14,7 +14,7 @@
   p = SchwarzChristoffel.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
   map = SchwarzChristoffel.ExteriorMap(p)
   prev, C = SchwarzChristoffel.parameters(map)
-  @test prev[2] ≈ -0.902383088-0.430934755im
+  @test prev[3] ≈ -0.902383088-0.430934755im
 
   zeta = [0.1,0.5-0.75im,-0.25-0.3im]
   @test SchwarzChristoffel.evaluate(zeta,map,true) ≈
@@ -36,5 +36,8 @@
         Complex128[ 1.030528002 + 0.004449924im,
                     1.006955879 - 0.011501136im,
                     1.300781073 - 0.266624652im]
+
+  ccoeff, dcoeff = SchwarzChristoffel.coefficients(map)
+  @test ccoeff[1] ≈ 1.019795410
 
 end
