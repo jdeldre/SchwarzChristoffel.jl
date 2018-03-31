@@ -3,5 +3,4 @@ Documenter
 DocStringExtensions
 FastGaussQuadrature
 NLsolve
-PyPlot
 TestSetExtensions
