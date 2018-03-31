@@ -5,7 +5,6 @@ makedocs(
     sitename = "SchwarzChristoffel.jl",
     pages = [
         "Home" => "index.md"
-            ]
     ],
     assets = ["assets/custom.css"],
     strict = true
