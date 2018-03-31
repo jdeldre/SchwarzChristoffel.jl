@@ -14,11 +14,11 @@ env:
   - PYTHON=""
 
 # uncomment the following lines to override the default test script
-script:
+#script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 #  - julia -e 'Pkg.clone(pwd()); Pkg.build("PotentialFlow"); Pkg.test("PotentialFlow"; coverage=true)'
 #
-  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'Pkg.clone(pwd());Pkg.test("SchwarzChristoffel"; coverage=true);'
+#  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'Pkg.clone(pwd());Pkg.test("SchwarzChristoffel"; coverage=true);'
 after_success:
   # push coverage results to Coveralls
   - julia -e 'cd(Pkg.dir("SchwarzChristoffel")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
