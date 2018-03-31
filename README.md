@@ -2,7 +2,7 @@
 
 | Documentation | Build Status |
 |:---:|:---:|
-| [![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://darwindarak.github.com/PotentialFlow.jl) | [![Build Status](https://img.shields.io/travis/darwindarak/PotentialFlow.jl/master.svg?label=linux)](https://travis-ci.org/darwindarak/PotentialFlow.jl) [![Build status](https://img.shields.io/appveyor/ci/darwindarak/PotentialFlow-jl/master.svg?label=windows)](https://ci.appveyor.com/project/darwindarak/potentialflow-jl/branch/master) [![codecov](https://codecov.io/gh/darwindarak/PotentialFlow.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/darwindarak/PotentialFlow.jl) |
+| [![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://github.com/jdeldre/SchwarzChristoffel.jl) | [![Build Status](https://img.shields.io/travis/darwindarak/PotentialFlow.jl/master.svg?label=linux)](https://travis-ci.org/darwindarak/PotentialFlow.jl) [![Build status](https://img.shields.io/appveyor/ci/darwindarak/PotentialFlow-jl/master.svg?label=windows)](https://ci.appveyor.com/project/darwindarak/potentialflow-jl/branch/master) [![codecov](https://codecov.io/gh/darwindarak/PotentialFlow.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/darwindarak/PotentialFlow.jl) |
 
 ## Installation
 
