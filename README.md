@@ -25,4 +25,4 @@ julia> Pkg.update()
 ```
 to get the most recent version of the library and its dependencies.
 
-Examples can be found in the [documentation](https://darwindarak.github.io/PotentialFlow.jl) and the [Jupyter notebooks](https://github.com/darwindarak/PotentialFlow.jl/tree/master/examples).
+Examples can be found in the [documentation](https://jdeldre.github.io/SchwarzChristoffel.jl) and the [Jupyter notebooks](https://github.com/jdeldre/SchwarzChristoffel.jl/tree/master/examples).
