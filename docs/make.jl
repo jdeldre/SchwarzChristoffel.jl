@@ -4,8 +4,10 @@ makedocs(
     format =:html,
     sitename = "SchwarzChristoffel.jl",
     pages = [
-        "Home" => ["index.md",
-                   "reference.md"]
+        "Home" => "index.md",
+        "Reference" => [
+                   "polygons.md"
+                   ]
     ],
     assets = ["assets/custom.css"],
     strict = true

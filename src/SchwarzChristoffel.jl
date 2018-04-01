@@ -1,16 +1,16 @@
 module SchwarzChristoffel
 
-
+using Reexport
 
 include("Properties.jl")
 include("Integration.jl")
 include("Polygons.jl")
-using .Polygons
+@reexport using .Polygons
 
 include("Exterior.jl")
-using .Exterior
+@reexport using .Exterior
 
-export Polygons
+export Polygons, Exterior
 
 
 

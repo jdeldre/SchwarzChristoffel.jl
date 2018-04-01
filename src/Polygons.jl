@@ -6,6 +6,20 @@ import Base: length, show, isinf
 
 export Polygon,vertex,interiorangle,isinpoly,plot
 
+"""
+    Polygon(x::Vector{Float64}, y::Vector{Float64})
+
+A polygon defined by its vertices and associated interior angles.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
+Polygon with 4 vertices at
+             (-1.0,-1.0) (0.2,-1.0) (1.0,0.5) (-1.0,1.0)
+             interior angles/π = [0.5, 0.656, 0.422, 0.422]
+```
+"""
 struct Polygon
   vert :: Vector{Complex128}
   angle :: Vector{Float64}
@@ -15,24 +29,11 @@ end
 
 Polygon(x::T,y::T,angle) where T = Polygon(x+im*y,angle)
 
-"""
-    Polygons.Polygon(x::Vector{Float64}, y::Vector{Float64})
 
-Sets up a polygon with the coordinates of the vertices specified
-with vectors `x` and `y`.
-
-# Example
-
-```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
-```
-"""
 Polygon(x::T,y::T) where T = Polygon(x+im*y,interiorangle(x+im*y))
 
 """
-    Polygons.Polygon(w::Vector{Complex128})
+    Polygon(w::Vector{Complex128})
 
 Sets up a polygon with the coordinates of the vertices specified
 with complex vector `w`.
@@ -40,26 +41,25 @@ with complex vector `w`.
 # Example
 
 ```jldoctest
-julia> p = Polygons.Polygon([-1.0-1.0im,0.2-1.0im,1.0+0.5im,-1.0+1.0im])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
+julia> p = Polygon([-1.0-1.0im,0.2-1.0im,1.0+0.5im,-1.0+1.0im])
+Polygon with 4 vertices at
+             (-1.0,-1.0) (0.2,-1.0) (1.0,0.5) (-1.0,1.0)
              interior angles/π = [0.5, 0.656, 0.422, 0.422]
 ```
 """
 Polygon(w::Vector{Complex128}) = Polygon(w,interiorangle(w))
 
 """
-    Polygons.vertex(p::Polygons.Polygon)
+    vertex(p::Polygon)
 
 Returns the vector of vertices of the polygon `p`, in complex form.
 
 # Example
 
 ```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 
-julia> Polygons.vertex(p)
+julia> vertex(p)
 4-element Array{Complex{Float64},1}:
  -1.0-1.0im
   0.2-1.0im
@@ -70,16 +70,14 @@ julia> Polygons.vertex(p)
 vertex(p::Polygon) = p.vert
 
 """
-    isinf(p::Polygons.Polygon)
+    isinf(p::Polygon)
 
 Returns `true` if any vertex in polygon `p` is at infinity.
 
 # Example
 
 ```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 
 julia> isinf(p)
 false
@@ -88,16 +86,14 @@ false
 Base.isinf(p::Polygon) = any(isinf.(vertex(p)))
 
 """
-    length(p::Polygons.Polygon)
+    length(p::Polygon)
 
 Returns the number of vertices of the polygon `p`.
 
 # Example
 
 ```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 
 julia> length(p)
 4
@@ -106,18 +102,16 @@ julia> length(p)
 Base.length(p::Polygon) = length(vertex(p))
 
 """
-    Polygons.interiorangle(p::Polygons.Polygon)
+    interiorangle(p::Polygon)
 
-Returns the vector of interior angles of the polygon `p`.
+Returns the vector of interior angles (divided by \$\\pi\$) of the polygon `p`.
 
 # Example
 
 ```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 
-julia> Polygons.interiorangle(p)
+julia> interiorangle(p)
 4-element Array{Float64,1}:
  0.5
  0.655958
@@ -190,7 +184,7 @@ end
 isinpoly(z,w,beta) = isinpoly(z,w,beta,eps())
 
 """
-    Polygons.isinpoly(z::Complex128,p::Polygons.Polygon)
+    isinpoly(z::Complex128,p::Polygon)
 
 Returns `true` or `false` depending on whether `z` is inside
 or outside polygon `p`.
@@ -198,37 +192,34 @@ or outside polygon `p`.
 # Example
 
 ```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 
-julia> Polygons.isinpoly(0.0+0.0im,p)
+julia> isinpoly(0.0+0.0im,p)
 true
 
-julia> Polygons.isinpoly(1.0+2.0im,p)
+julia> isinpoly(1.0+2.0im,p)
 false
-```
-
-    Polygons.isinpoly(z::Complex128,p::Polygons.Polygon,tol::Float64)
-
-Returns `true` if `z` is inside or within distance `tol` polygon `p`.
-
-# Example
-
-```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
-
-julia> Polygons.isinpoly(-1.01+0.0im,p)
-false
-
-julia> Polygons.isinpoly(-1.01+0.0im,p,1e-2)
-true
 ```
 """
 isinpoly(z,p::Polygon) = isinpoly(z,p::Polygon,eps())
 
+"""
+    isinpoly(z::Complex128,p::Polygon,tol::Float64)
+
+Returns `true` if `z` is inside or within distance `tol` of polygon `p`.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> isinpoly(-1.01+0.0im,p)
+false
+
+julia> isinpoly(-1.01+0.0im,p,1e-2)
+true
+```
+"""
 isinpoly(z,p::Polygon,tol) = isinpoly(z,p.vert,p.angle,tol)
 
 winding(z,x...) = float.(isinpoly(z,x...))
@@ -265,18 +256,16 @@ function PlotStyle()
 end
 
 """
-    Polygons.plot(p::Polygons.Polygon)
+    plot(p::Polygon)
 
 Plots the polygon `p`.
 
 # Example
 
 ```jldoctest
-julia> p = Polygons.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
-Polygon with 4 vertices at Complex{Float64}[-1.0-1.0im, 0.2-1.0im, 1.0+0.5im, -1.0+1.0im]
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 
-julia> Polygons.plot(p);
+julia> plot(p);
 ```
 """
 function plot(p::Polygon)
@@ -287,7 +276,12 @@ function plot(p::Polygon)
 end
 
 function show(io::IO, p::Polygon)
-    println(io, "Polygon with $(length(p.vert)) vertices at $(p.vert) ")
+    println(io, "Polygon with $(length(p.vert)) vertices at")
+    print(io,   "             ")
+    for i = 1:length(p.vert)
+        print(io,"($(real(p.vert[i])),$(imag(p.vert[i]))) ")
+    end
+    println(io)
     println(io, "             interior angles/π = $(round.(p.angle, 3))")
 end
 
