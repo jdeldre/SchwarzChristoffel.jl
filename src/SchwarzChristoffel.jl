@@ -10,6 +10,8 @@ using .Polygons
 include("Exterior.jl")
 using .Exterior
 
+export Polygons
+
 
 
 end
