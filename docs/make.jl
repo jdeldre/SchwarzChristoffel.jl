@@ -10,10 +10,12 @@ makedocs(
     strict = true
 )
 
-deploydocs(
-    deps = nothing,
+if "DOCUMENTER_KEY" in keys(ENV)
+  deploydocs(
     repo = "github.com/jdeldre/SchwarzChristoffel.jl.git",
     target = "build",
+    deps = nothing,
     make = nothing,
     julia = "0.6"
-)
+  )
+end
