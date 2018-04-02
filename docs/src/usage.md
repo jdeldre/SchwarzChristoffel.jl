@@ -24,7 +24,7 @@ savefig("polygon4.svg",format="svg"); nothing # hide
 ```
 
 ```@raw html
-<object data="polygon4.svg" width="400" type="image/svg+xml"></object>
+<object data="polygon4.svg" type="image/svg+xml"></object>
 ```
 
 Now, we create the map from the unit circle to the polygon.
@@ -42,7 +42,7 @@ savefig("polygongrid.svg",format="svg"); nothing # hide
 ```
 
 ```@raw html
-<object data="polygongrid.svg" width="400" type="image/svg+xml"></object>
+<object data="polygongrid.svg" type="image/svg+xml"></object>
 ```
 
 We can now easily evaluate the map at any place we like. It could be evaluated

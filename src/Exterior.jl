@@ -88,7 +88,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
   end
   J = 0.25*imag(sum(conj.(zmid).*dz.*(abs.(zmid).^2+abs.(dz).^2/12)))
 
-  zetainf = Complex128[100.0]
+  zetainf = Complex128[40.0]
   sigmainf = -c/abs(c)./zetainf
   zinf = evaluate(sigmainf,w,beta,zeta,c,qdat)
   a = zinf[1] - abs(c)*zetainf[1]
