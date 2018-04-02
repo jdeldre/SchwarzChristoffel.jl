@@ -33,6 +33,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "usage.html#",
+    "page": "Usage",
+    "title": "Usage",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "usage.html#Basic-usage-1",
+    "page": "Usage",
+    "title": "Basic usage",
+    "category": "section",
+    "text": "DocTestSetup = quote\nsrand(1)\nendusing SchwarzChristoffelp = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])\nplot(p)\nsavefig(\"polygon4.svg\",format=\"svg\"); nothing # hide<object data=\"polygon4.svg\" width=\"400\" type=\"image/svg+xml\"></object>"
+},
+
+{
     "location": "polygons.html#",
     "page": "Polygons",
     "title": "Polygons",
