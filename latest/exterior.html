@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Exterior map · SchwarzChristoffel.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/><link href="assets/custom.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>SchwarzChristoffel.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="index.html">Home</a></li><li><span class="toctext">Reference</span><ul><li><a class="toctext" href="polygons.html">Polygons</a></li><li class="current"><a class="toctext" href="exterior.html">Exterior map</a><ul class="internal"><li><a class="toctext" href="#Methods-1">Methods</a></li><li><a class="toctext" href="#Index-1">Index</a></li></ul></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li>Reference</li><li><a href="exterior.html">Exterior map</a></li></ul><a class="edit-page" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/master/docs/src/exterior.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Exterior map</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Exterior-map-1" href="#Exterior-map-1">Exterior map</a></h1><h2><a class="nav-anchor" id="Methods-1" href="#Methods-1">Methods</a></h2><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.ExteriorMap" href="#SchwarzChristoffel.Exterior.ExteriorMap"><code>SchwarzChristoffel.Exterior.ExteriorMap</code></a> — <span class="docstring-category">Type</span>.</div><div><pre><code class="language-none">ExteriorMap(p::Polygon[;tol::Float64][,ncoeff::Int])</code></pre><p>Create a Schwarz-Christoffel map from the interior or exterior of the unit circle to the exterior of polygon <code>p</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p)
+Exterior map with
+   vertices: (-1.0,-1.0), (0.2,-1.0), (1.0,0.5), (-1.0,1.0),
+   interior angles/π: 0.5, 0.656, 0.422, 0.422,
+   prevertices on circle: (1.0,0.0), (0.3764,-0.9265), (-0.9024,-0.4309), (-0.1868,0.9824),
+   constant = 0.6722 + 0.7669im, accuracy = 1.0e-8,
+   number of multipole coefficients = 12</code></pre><p><code>ExteriorMap(p;tol=1e-12)</code> manually sets the tolerance to <code>1e-12</code> (the default is 1e-8).</p><p><code>ExteriorMap(p;ncoeff=16)</code> manually sets the number of coefficients of negative powers of the multipole expansion of the mapping to <code>16</code> (the default is 12).</p></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L35-L61">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.parameters" href="#SchwarzChristoffel.Exterior.parameters"><code>SchwarzChristoffel.Exterior.parameters</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">parameters(map::ExteriorMap) -&gt; Tuple{Vector{Complex128},Complex128}</code></pre><p>Returns a tuple of a vector of the prevertices and the complex factor of the mapping <code>map</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; prev, C = parameters(map);
+
+julia&gt; prev
+4-element Array{Complex{Float64},1}:
+       1.0+0.0im
+  0.376406-0.926455im
+ -0.902383-0.430935im
+ -0.186756+0.982406im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L148-L170">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.coefficients" href="#SchwarzChristoffel.Exterior.coefficients"><code>SchwarzChristoffel.Exterior.coefficients</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">coefficients(map::ExteriorMap) -&gt; Tuple{Vector{Complex128},Vector{Complex128}}</code></pre><p>Returns a tuple of vectors of the complex coefficients of the multipole expansion of the mapping <span>$z(\zeta)$</span> described by <code>map</code> as well as the coefficients of the square magnitude of the mapping <span>$|z(\zeta)|^2$</span>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; ccoeff, dcoeff = coefficients(map);
+
+julia&gt; ccoeff
+14-element Array{Complex{Float64},1}:
+       1.0198+0.0im
+    -0.210416-0.0157905im
+  -0.00655708+0.0398156im
+     0.136922+0.0951343im
+    -0.095035+0.0891769im
+    0.0184341+0.0299586im
+    0.0136513+2.78095e-5im
+   -0.0159533-0.00264418im
+  -0.00167426-0.00501161im
+  -0.00578705-0.000221652im
+  -0.00447511+0.00252069im
+   0.00469089-0.00150588im
+  0.000441767-0.00192516im
+ -0.000381357-0.00174291im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L175-L208">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.moments" href="#SchwarzChristoffel.Exterior.moments"><code>SchwarzChristoffel.Exterior.moments</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">moments(map::ExteriorMap) -&gt; Vector{Complex128}</code></pre><p>Return the moments of the prevertices for mapping <code>map</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; mom = moments(map)
+13-element Array{Complex{Float64},1}:
+ -2.46691e-9+3.04899e-9im
+  -0.0128596+0.0780855im
+    0.805587+0.559726im
+    -1.12125+1.04835im
+    0.316471+0.633964im
+    0.462871+0.225702im
+    -1.56266+0.0306815im
+   -0.106975-0.476173im
+   -0.720332-0.0496159im
+     -1.1805+0.0838739im
+      1.1618-0.762023im
+  -0.0612155-0.5728im
+   -0.223423-0.726949im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L211-L239">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.area" href="#SchwarzChristoffel.Exterior.area"><code>SchwarzChristoffel.Exterior.area</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">area(map::ExteriorMap) -&gt; Float64</code></pre><p>Returns the area of the polygon described by the mapping <code>map</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; area(map)
+2.9</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L242-L257">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.centroid" href="#SchwarzChristoffel.Exterior.centroid"><code>SchwarzChristoffel.Exterior.centroid</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">centroid(map::ExteriorMap) -&gt; Complex128</code></pre><p>Returns the complex centroid position of the polygon described by the mapping <code>map</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; centroid(map)
+-0.20919540229885059 - 0.04022988505747128im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L260-L276">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.Jmoment" href="#SchwarzChristoffel.Exterior.Jmoment"><code>SchwarzChristoffel.Exterior.Jmoment</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">Jmoment(map::ExteriorMap) -&gt; Float64</code></pre><p>Returns the second area moment of the polygon described by the mapping <code>map</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; Jmoment(map)
+1.5768333333333333</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L279-L295">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.evaluate" href="#SchwarzChristoffel.Exterior.evaluate"><code>SchwarzChristoffel.Exterior.evaluate</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool) -&gt; Vector{Complex128}</code></pre><p>Evaluates the mapping <code>map</code> at the vector of points <code>zeta</code>, which are assumed to lie inside the unit circle if <code>inside</code> is <code>true</code>, or are assumed outside the unit circle if <code>inside</code> is <code>false</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; zeta = [0.1,0.5-0.75im,-0.25-0.3im];
+
+julia&gt; evaluate(zeta,map,true)
+3-element Array{Complex{Float64},1}:
+   -6.9344-7.68965im
+ 0.0439774-1.11249im
+   2.41181-0.044779im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L427-L449">source</a><div><pre><code class="language-none">evaluate(zeta::Vector{Complex128},map::ExteriorMap) -&gt; Vector{Complex128}</code></pre><p>Evaluates the mapping <code>map</code> at the vector of points <code>zeta</code>, which are assumed to lie outside the unit circle.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
+
+julia&gt; evaluate(zeta,map)
+3-element Array{Complex{Float64},1}:
+   0.81614+3.02956im
+  -2.25237-2.08523im
+ -0.333104+0.975837im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L466-L487">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SchwarzChristoffel.Exterior.evalderiv" href="#SchwarzChristoffel.Exterior.evalderiv"><code>SchwarzChristoffel.Exterior.evalderiv</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">evalderiv(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool) -&gt; Tuple{Vector{Complex128},Vector{Complex128}}</code></pre><p>Evaluates the first and second derivatives of the mapping <code>map</code> at the vector of points <code>zeta</code>, which are assumed to lie inside the unit circle if <code>inside</code> is <code>true</code>, or are assumed outside the unit circle if <code>inside</code> is <code>false</code>. The first entry in the tuple returned is the first derivative, the second entry is the second derivative.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; zeta = [0.1,0.5-0.75im,-0.25-0.3im];
+
+julia&gt; dz, ddz = evalderiv(zeta,map,true);
+
+julia&gt; dz
+3-element Array{Complex{Float64},1}:
+  67.2068+76.6284im
+ -1.11666+0.544576im
+  3.99129-5.30641im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L490-L516">source</a><div><pre><code class="language-none">evalderiv(zeta::Vector{Complex128},map::ExteriorMap) -&gt; Tuple{Vector{Complex128},Vector{Complex128}}</code></pre><p>Evaluates the first and second derivatives of the mapping <code>map</code> at the vector of points <code>zeta</code>, which are assumed to lie outside the unit circle. The first entry in the tuple returned is the first derivative, the second entry is the second derivative.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl">julia&gt; p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia&gt; map = ExteriorMap(p);
+
+julia&gt; zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
+
+julia&gt; dz, ddz = evalderiv(zeta,map);
+
+julia&gt; dz
+3-element Array{Complex{Float64},1}:
+ 1.03053+0.00444992im
+ 1.00696-0.0115011im
+ 1.30078-0.266625im</code></pre></div><a class="source-link" target="_blank" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/a93ad9cb29a291405185d3da7a7d4082eeb307e4/src/Exterior.jl#L536-L561">source</a></section><h2><a class="nav-anchor" id="Index-1" href="#Index-1">Index</a></h2><ul><li><a href="exterior.html#SchwarzChristoffel.Exterior.ExteriorMap"><code>SchwarzChristoffel.Exterior.ExteriorMap</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.Jmoment"><code>SchwarzChristoffel.Exterior.Jmoment</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.area"><code>SchwarzChristoffel.Exterior.area</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.centroid"><code>SchwarzChristoffel.Exterior.centroid</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.coefficients"><code>SchwarzChristoffel.Exterior.coefficients</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.evalderiv"><code>SchwarzChristoffel.Exterior.evalderiv</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.evaluate"><code>SchwarzChristoffel.Exterior.evaluate</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.moments"><code>SchwarzChristoffel.Exterior.moments</code></a></li><li><a href="exterior.html#SchwarzChristoffel.Exterior.parameters"><code>SchwarzChristoffel.Exterior.parameters</code></a></li></ul><footer><hr/><a class="previous" href="polygons.html"><span class="direction">Previous</span><span class="title">Polygons</span></a></footer></article></body></html>
