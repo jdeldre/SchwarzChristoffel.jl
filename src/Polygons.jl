@@ -1,15 +1,15 @@
 module Polygons
 
-using PyPlot
-import PyCall
+
 import Base: length, show, isinf
 
-export Polygon,vertex,interiorangle,isinpoly,plot,savefig
+export Polygon,vertex,interiorangle,isinpoly
 
 """
     Polygon(x::Vector{Float64}, y::Vector{Float64})
 
-A polygon defined by its vertices and associated interior angles.
+A polygon defined by its vertices, which must be provided in
+counter-clockwise order.
 
 # Example
 
@@ -36,7 +36,8 @@ Polygon(x::T,y::T) where T = Polygon(x+im*y,interiorangle(x+im*y))
     Polygon(w::Vector{Complex128})
 
 Sets up a polygon with the coordinates of the vertices specified
-with complex vector `w`.
+with complex vector `w`. As usual, these must be supplied in
+counter-clockwise order.
 
 # Example
 
@@ -225,55 +226,6 @@ isinpoly(z,p::Polygon,tol) = isinpoly(z,p.vert,p.angle,tol)
 winding(z,x...) = float.(isinpoly(z,x...))
 
 
-
-
-
-const mygreen = [151/255,180/255,118/255];
-const mygreen2 = [113/255,161/255,103/255];
-const myblue = [74/255,144/255,226/255];
-
-PlotColor = Union{Vector{Float64},String,Symbol}
-
-struct PlotStyle
-
-  bodycolor :: PlotColor
-  linewidth :: Int64
-  pointsize :: Int64
-
-end
-
-function PlotStyle()
-  PyCall.PyDict(matplotlib["rcParams"])["font.family"] = "STIXGeneral";
-  PyCall.PyDict(matplotlib["rcParams"])["mathtext.fontset"] = "stix";
-  PyCall.PyDict(matplotlib["rcParams"])["font.size"] = 10;
-
-  bodycolor = mygreen
-  linewidth = 1
-  pointsize = 3
-
-  PlotStyle(bodycolor,linewidth,pointsize)
-
-end
-
-"""
-    plot(p::Polygon)
-
-Plots the polygon `p`.
-
-# Example
-
-```jldoctest
-julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
-
-julia> plot(p);
-```
-"""
-function plot(p::Polygon)
-  ps = PlotStyle()
-  pf = PyPlot.fill(real(p.vert),imag(p.vert),facecolor=ps.bodycolor);
-  PyPlot.plot(real(p.vert),imag(p.vert),color=ps.bodycolor);
-  PyPlot.axis("scaled")
-end
 
 function show(io::IO, p::Polygon)
     println(io, "Polygon with $(length(p.vert)) vertices at")

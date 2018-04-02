@@ -12,6 +12,6 @@ include("Exterior.jl")
 
 export Polygons, Exterior
 
-
+include("Plotting.jl")
 
 end

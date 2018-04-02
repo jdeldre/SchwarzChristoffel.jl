@@ -5,15 +5,16 @@ makedocs(
     sitename = "SchwarzChristoffel.jl",
     pages = [
         "Home" => "index.md",
-        "Usage" => "usage.md",
+        "Basic Usage" => "usage.md",
         "Reference" => [
                    "polygons.md",
-                   "exterior.md"
+                   "exterior.md",
+                   "plotting.md"
                    ]
     ],
     assets = ["assets/custom.css"],
     strict = true,
-    doctest = false
+    doctest = true
 )
 
 deploydocs(
