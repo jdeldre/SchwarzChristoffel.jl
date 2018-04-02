@@ -6,11 +6,13 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Reference" => [
-                   "polygons.md"
+                   "polygons.md",
+                   "exterior.md"
                    ]
     ],
     assets = ["assets/custom.css"],
-    strict = true
+    strict = true,
+    doctest = true
 )
 
 deploydocs(

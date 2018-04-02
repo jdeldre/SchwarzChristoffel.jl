@@ -50,7 +50,7 @@ Polygon with 4 vertices at
 Polygon(w::Vector{Complex128}) = Polygon(w,interiorangle(w))
 
 """
-    vertex(p::Polygon)
+    vertex(p::Polygon) -> -> Vector{Complex128}
 
 Returns the vector of vertices of the polygon `p`, in complex form.
 
@@ -70,7 +70,7 @@ julia> vertex(p)
 vertex(p::Polygon) = p.vert
 
 """
-    isinf(p::Polygon)
+    isinf(p::Polygon) -> Bool
 
 Returns `true` if any vertex in polygon `p` is at infinity.
 
@@ -86,7 +86,7 @@ false
 Base.isinf(p::Polygon) = any(isinf.(vertex(p)))
 
 """
-    length(p::Polygon)
+    length(p::Polygon) -> Integer
 
 Returns the number of vertices of the polygon `p`.
 
@@ -102,7 +102,7 @@ julia> length(p)
 Base.length(p::Polygon) = length(vertex(p))
 
 """
-    interiorangle(p::Polygon)
+    interiorangle(p::Polygon) -> Vector{Float64}
 
 Returns the vector of interior angles (divided by \$\\pi\$) of the polygon `p`.
 
@@ -184,7 +184,7 @@ end
 isinpoly(z,w,beta) = isinpoly(z,w,beta,eps())
 
 """
-    isinpoly(z::Complex128,p::Polygon)
+    isinpoly(z::Complex128,p::Polygon) -> Bool
 
 Returns `true` or `false` depending on whether `z` is inside
 or outside polygon `p`.
@@ -204,7 +204,7 @@ false
 isinpoly(z,p::Polygon) = isinpoly(z,p::Polygon,eps())
 
 """
-    isinpoly(z::Complex128,p::Polygon,tol::Float64)
+    isinpoly(z::Complex128,p::Polygon,tol::Float64) -> Bool
 
 Returns `true` if `z` is inside or within distance `tol` of polygon `p`.
 

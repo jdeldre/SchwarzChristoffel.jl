@@ -8,6 +8,7 @@ using ..Integration
 export ExteriorMap,evaluate,evalderiv,parameters,coefficients,
         moments,area,centroid,Jmoment
 
+
 struct ExteriorMap <: Map
 
   vertex :: Vector{Complex128}
@@ -31,6 +32,33 @@ struct ExteriorMap <: Map
 
 end
 
+"""
+    ExteriorMap(p::Polygon[;tol::Float64][,ncoeff::Int])
+
+Create a Schwarz-Christoffel map from the interior or exterior of
+the unit circle to the exterior of polygon `p`.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p)
+Exterior map with
+   vertices: (-1.0,-1.0), (0.2,-1.0), (1.0,0.5), (-1.0,1.0),
+   interior angles/π: 0.5, 0.656, 0.422, 0.422,
+   prevertices on circle: (1.0,0.0), (0.3764,-0.9265), (-0.9024,-0.4309), (-0.1868,0.9824),
+   constant = 0.6722 + 0.7669im, accuracy = 1.0e-8,
+   number of multipole coefficients = 12
+```
+
+`ExteriorMap(p;tol=1e-12)` manually sets the tolerance to `1e-12`
+(the default is 1e-8).
+
+`ExteriorMap(p;ncoeff=16)` manually sets the number of coefficients of
+negative powers of the multipole expansion of the mapping to `16`
+(the default is 12).
+"""
 function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
 
   n = length(p.vert)
@@ -85,32 +113,187 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
 end
 
 function Base.show(io::IO, map::ExteriorMap)
-    println(io, "Exterior map with $(length(map.vertex)) vertices at")
+    println(io, "Exterior map with")
+    print(io,   "   ")
+    print(io,"vertices: ")
     for i = 1:length(map.vertex)
-    println(io, "       $(round(map.vertex[i],4))")
+        print(io,"($(round(real(map.vertex[i]),4)),$(round(imag(map.vertex[i]),4))), ")
     end
-    println(io, "   interior angles/π")
+    println(io)
+    #for i = 1:length(map.vertex)
+    #println(io, "       $(round(map.vertex[i],4))")
+    #end
+    print(io,"   ")
+    print(io, "interior angles/π: ")
     for i = 1:length(map.angle)
-    println(io, "       $(round(map.angle[i],4))")
+        print(io, "$(round(map.angle[i],4)), ")
     end
-    println(io, "   prevertices on circle at")
+    println(io)
+    print(io,"   ")
+    print(io, "prevertices on circle: ")
     for i = length(map.prevertex):-1:1
-    println(io, "       $(round(map.prevertex[i],4))")
+        print(io,"($(round(real(map.prevertex[i]),4)),$(round(imag(map.prevertex[i]),4))), ")
     end
-    println(io, "   constant = $(round(map.constant,4))")
-    println(io, "   accuracy = $(map.accuracy)")
-    println(io, "   number of multipole coefficients = $(map.ncoeff)")
+    println(io)
+    print(io, "   ")
+    print(io, "constant = $(round(map.constant,4)), ")
+    print(io, "accuracy = $(map.accuracy), ")
+    println(io)
+    print(io, "   ")
+    print(io, "number of multipole coefficients = $(map.ncoeff)")
+    println(io)
 
 end
 
+"""
+    parameters(map::ExteriorMap) -> Tuple{Vector{Complex128},Complex128}
+
+Returns a tuple of a vector of the prevertices and the complex factor of
+the mapping.
+
+# Example
+
+```jldoctest paramtest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> prev, C = parameters(map);
+
+julia> prev
+4-element Array{Complex{Float64},1}:
+       1.0+0.0im
+  0.376406-0.926455im
+ -0.902383-0.430935im
+ -0.186756+0.982406im
+```
+```jldoctest paramtest
+julia> C
+0.6722109863402015 + 0.7668866078562682im
+```
+"""
+
 parameters(map::ExteriorMap) = flipdim(map.prevertex,1), map.constant
 
+"""
+    coefficients(map::ExteriorMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
+
+Returns a tuple of vectors of the complex coefficients of the multipole
+expansion of the mapping \$z(\\zeta)\$ as well as the coefficients of
+the square magnitude of the mapping \$|z(\\zeta)|^2\$.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> ccoeff, dcoeff = coefficients(map);
+
+julia> ccoeff
+14-element Array{Complex{Float64},1}:
+       1.0198+0.0im
+    -0.210416-0.0157905im
+  -0.00655708+0.0398156im
+     0.136922+0.0951343im
+    -0.095035+0.0891769im
+    0.0184341+0.0299586im
+    0.0136513+2.78095e-5im
+   -0.0159533-0.00264418im
+  -0.00167426-0.00501161im
+  -0.00578705-0.000221652im
+  -0.00447511+0.00252069im
+   0.00469089-0.00150588im
+  0.000441767-0.00192516im
+ -0.000381357-0.00174291im
+```
+"""
 coefficients(map::ExteriorMap) = map.ccoeff, map.dcoeff
 
+"""
+    moments(map::ExteriorMap) -> Vector{Complex128}
+
+Return the moments of the prevertices.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> mom = moments(map)
+13-element Array{Complex{Float64},1}:
+ -2.46691e-9+3.04899e-9im
+  -0.0128596+0.0780855im
+    0.805587+0.559726im
+    -1.12125+1.04835im
+    0.316471+0.633964im
+    0.462871+0.225702im
+    -1.56266+0.0306815im
+   -0.106975-0.476173im
+   -0.720332-0.0496159im
+     -1.1805+0.0838739im
+      1.1618-0.762023im
+  -0.0612155-0.5728im
+   -0.223423-0.726949im
+```
+"""
 moments(map::ExteriorMap) = map.mom
 
+"""
+    area(map::ExteriorMap) -> Float64
+
+Returns the area of the polygon described by the mapping.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> area(map)
+2.9
+```
+"""
 area(map::ExteriorMap) = map.area
+
+"""
+    centroid(map::ExteriorMap) -> Complex128
+
+Returns the complex centroid position of the polygon described by the mapping.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> centroid(map)
+-0.20919540229885059 - 0.04022988505747128im
+```
+"""
 centroid(map::ExteriorMap) = map.Zc
+
+"""
+    Jmoment(map::ExteriorMap) -> Float64
+
+Returns the second area moment of the polygon described by the mapping.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> Jmoment(map)
+1.5768333333333333
+```
+"""
 Jmoment(map::ExteriorMap) = map.J
 
 
@@ -242,6 +425,29 @@ function evalderiv(zeta::Vector{Complex128},beta::Vector{Float64},
 
 end
 
+"""
+    evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool) -> Vector{Complex128}
+
+Evaluates the mapping at the vector of points `zeta`, which are
+assumed to lie inside the unit circle if `inside` is `true`, or
+are assumed outside the unit circle if `inside` is `false`.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> zeta = [0.1,0.5-0.75im,-0.25-0.3im];
+
+julia> evaluate(zeta,map,true)
+3-element Array{Complex{Float64},1}:
+   -6.9344-7.68965im
+ 0.0439774-1.11249im
+   2.41181-0.044779im
+```
+"""
 function evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
 
   if inside
@@ -258,8 +464,57 @@ function evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
   end
 end
 
+"""
+    evaluate(zeta::Vector{Complex128},map::ExteriorMap) -> Vector{Complex128}
+
+Evaluates the mapping at the vector of points `zeta`, which are
+assumed to lie outside the unit circle.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
+
+julia> evaluate(zeta,map)
+3-element Array{Complex{Float64},1}:
+   0.81614+3.02956im
+  -2.25237-2.08523im
+ -0.333104+0.975837im
+```
+"""
 evaluate(zeta::Vector{Complex128},map::ExteriorMap) = evaluate(zeta,map,false)
 
+"""
+    evalderiv(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool) -> Tuple{Vector{Complex128},Vector{Complex128}}
+
+Evaluates the first and second derivatives of the mapping at the vector
+of points `zeta`, which are assumed to lie inside the unit circle if
+`inside` is `true`, or are assumed outside the unit circle if `inside` is
+`false`. The first entry in the tuple returned is the first derivative,
+the second entry is the second derivative.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> zeta = [0.1,0.5-0.75im,-0.25-0.3im];
+
+julia> dz, ddz = evalderiv(zeta,map,true);
+
+julia> dz
+3-element Array{Complex{Float64},1}:
+  67.2068+76.6284im
+ -1.11666+0.544576im
+  3.99129-5.30641im
+```
+"""
 function evalderiv(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
 
   if inside
@@ -279,6 +534,32 @@ function evalderiv(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool)
   end
 end
 
+"""
+    evalderiv(zeta::Vector{Complex128},map::ExteriorMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
+
+Evaluates the first and second derivatives of the mapping at the vector
+of points `zeta`, which are assumed to lie outside the unit circle.
+The first entry in the tuple returned is the first derivative,
+the second entry is the second derivative.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> map = ExteriorMap(p);
+
+julia> zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
+
+julia> dz, ddz = evalderiv(zeta,map);
+
+julia> dz
+3-element Array{Complex{Float64},1}:
+ 1.03053+0.00444992im
+ 1.00696-0.0115011im
+ 1.30078-0.266625im
+```
+"""
 evalderiv(zeta::Vector{Complex128},map::ExteriorMap) = evalderiv(zeta,map,false)
 
 function getcoefflist(power,div,mom)
