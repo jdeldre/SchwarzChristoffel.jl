@@ -83,7 +83,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
   if area > 0
     Zc = -0.5im/area*sum(dz.*(abs.(zmid).^2+abs.(dz).^2/12))
   else
-    Zc = mean.(z)
+    Zc = mean(z)
   end
   J = 0.25*imag(sum(conj.(zmid).*dz.*(abs.(zmid).^2+abs.(dz).^2/12)))
 
@@ -149,7 +149,7 @@ end
     parameters(map::ExteriorMap) -> Tuple{Vector{Complex128},Complex128}
 
 Returns a tuple of a vector of the prevertices and the complex factor of
-the mapping.
+the mapping `map`.
 
 # Example
 
@@ -167,11 +167,8 @@ julia> prev
  -0.902383-0.430935im
  -0.186756+0.982406im
 ```
-```jldoctest paramtest
-julia> C
-0.6722109863402015 + 0.7668866078562682im
-```
 """
+
 
 parameters(map::ExteriorMap) = flipdim(map.prevertex,1), map.constant
 
@@ -179,8 +176,8 @@ parameters(map::ExteriorMap) = flipdim(map.prevertex,1), map.constant
     coefficients(map::ExteriorMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
 
 Returns a tuple of vectors of the complex coefficients of the multipole
-expansion of the mapping \$z(\\zeta)\$ as well as the coefficients of
-the square magnitude of the mapping \$|z(\\zeta)|^2\$.
+expansion of the mapping \$z(\\zeta)\$ described by `map` as well as the
+coefficients of the square magnitude of the mapping \$|z(\\zeta)|^2\$.
 
 # Example
 
@@ -214,7 +211,7 @@ coefficients(map::ExteriorMap) = map.ccoeff, map.dcoeff
 """
     moments(map::ExteriorMap) -> Vector{Complex128}
 
-Return the moments of the prevertices.
+Return the moments of the prevertices for mapping `map`.
 
 # Example
 
@@ -245,7 +242,7 @@ moments(map::ExteriorMap) = map.mom
 """
     area(map::ExteriorMap) -> Float64
 
-Returns the area of the polygon described by the mapping.
+Returns the area of the polygon described by the mapping `map`.
 
 # Example
 
@@ -263,7 +260,8 @@ area(map::ExteriorMap) = map.area
 """
     centroid(map::ExteriorMap) -> Complex128
 
-Returns the complex centroid position of the polygon described by the mapping.
+Returns the complex centroid position of the polygon described by the
+mapping `map`.
 
 # Example
 
@@ -281,7 +279,8 @@ centroid(map::ExteriorMap) = map.Zc
 """
     Jmoment(map::ExteriorMap) -> Float64
 
-Returns the second area moment of the polygon described by the mapping.
+Returns the second area moment of the polygon described by the
+mapping `map`.
 
 # Example
 
@@ -428,7 +427,7 @@ end
 """
     evaluate(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool) -> Vector{Complex128}
 
-Evaluates the mapping at the vector of points `zeta`, which are
+Evaluates the mapping `map` at the vector of points `zeta`, which are
 assumed to lie inside the unit circle if `inside` is `true`, or
 are assumed outside the unit circle if `inside` is `false`.
 
@@ -467,7 +466,7 @@ end
 """
     evaluate(zeta::Vector{Complex128},map::ExteriorMap) -> Vector{Complex128}
 
-Evaluates the mapping at the vector of points `zeta`, which are
+Evaluates the mapping `map` at the vector of points `zeta`, which are
 assumed to lie outside the unit circle.
 
 # Example
@@ -491,7 +490,7 @@ evaluate(zeta::Vector{Complex128},map::ExteriorMap) = evaluate(zeta,map,false)
 """
     evalderiv(zeta::Vector{Complex128},map::ExteriorMap,inside::Bool) -> Tuple{Vector{Complex128},Vector{Complex128}}
 
-Evaluates the first and second derivatives of the mapping at the vector
+Evaluates the first and second derivatives of the mapping `map` at the vector
 of points `zeta`, which are assumed to lie inside the unit circle if
 `inside` is `true`, or are assumed outside the unit circle if `inside` is
 `false`. The first entry in the tuple returned is the first derivative,
@@ -537,7 +536,7 @@ end
 """
     evalderiv(zeta::Vector{Complex128},map::ExteriorMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
 
-Evaluates the first and second derivatives of the mapping at the vector
+Evaluates the first and second derivatives of the mapping `map` at the vector
 of points `zeta`, which are assumed to lie outside the unit circle.
 The first entry in the tuple returned is the first derivative,
 the second entry is the second derivative.
