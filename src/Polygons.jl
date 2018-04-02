@@ -4,7 +4,7 @@ using PyPlot
 import PyCall
 import Base: length, show, isinf
 
-export Polygon,vertex,interiorangle,isinpoly,plot
+export Polygon,vertex,interiorangle,isinpoly,plot,savefig
 
 """
     Polygon(x::Vector{Float64}, y::Vector{Float64})
