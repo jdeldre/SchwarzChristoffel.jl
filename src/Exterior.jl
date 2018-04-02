@@ -198,7 +198,7 @@ julia> ccoeff, dcoeff = coefficients(m);
 julia> ccoeff
 14-element Array{Complex{Float64},1}:
        1.0198+0.0im
-    -0.210416-0.0157905im
+    -0.210443-0.015142im
   -0.00655708+0.0398156im
      0.136922+0.0951343im
     -0.095035+0.0891769im
@@ -210,7 +210,7 @@ julia> ccoeff
   -0.00447511+0.00252069im
    0.00469089-0.00150588im
   0.000441767-0.00192516im
- -0.000381357-0.00174291im
+ -0.000381357-0.00174291im 
 ```
 """
 coefficients(m::ExteriorMap) = m.ccoeff, m.dcoeff
