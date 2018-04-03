@@ -51,9 +51,11 @@ julia> plot(p);
 """
 function plot(p::Polygon)
   ps = PlotStyle()
-  pf = PyPlot.fill(real(p.vert),imag(p.vert),facecolor=ps.bodycolor);
-  PyPlot.plot(real(p.vert),imag(p.vert),color=ps.bodycolor);
-  PyPlot.axis("scaled")
+  w = [p.vert;p.vert[1]]
+  pf = PyPlot.axes()
+  pf[:fill](real(w),imag(w),facecolor=ps.bodycolor);
+  pf[:plot](real(w),imag(w),color=ps.bodycolor);
+  pf[:axis]("scaled")
   nothing
 end
 

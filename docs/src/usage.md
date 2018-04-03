@@ -65,9 +65,12 @@ zeta = collect(1.1:0.1:2.0) + 0.1im
 dz,ddz = evalderiv(zeta,m)
 dz
 ```
+```@setup mapconstruct2
+using SchwarzChristoffel
+```
 
 Now let's try a more interesting shape. Here's a star-shaped body
-```@repl mapconstruct
+```@repl mapconstruct2
 n = 8; dθ = 2π/(2n)
 θ = collect(0:dθ:2π-dθ)
 w = (1+0.3cos.(n*θ)).*exp.(im*θ)
@@ -80,11 +83,11 @@ savefig("polygon8.svg",format="svg"); nothing # hide
 ```
 
 Construct the map and plot it
-```@repl mapconstruct
+```@repl mapconstruct2
 m = ExteriorMap(p)
 conformal_grid(m)
-savefig("polygongrid.svg",format="svg"); nothing # hide
+savefig("polygongrid8.svg",format="svg"); nothing # hide
 ```
 ```@raw html
-<object data="polygongrid.svg" type="image/svg+xml"></object>
+<object data="polygongrid8.svg" type="image/svg+xml"></object>
 ```

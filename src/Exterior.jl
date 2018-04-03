@@ -69,6 +69,28 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
   w = flipdim(vertex(p),1)
   beta = 1.-flipdim(interiorangle(p),1)
 
+  # do some fixing
+  n = length(p)
+  renum = 1:n
+  shift = [2:n;1]
+  w = flipdim(vertex(p),1)
+  beta = 1 - flipdim(interiorangle(p),1)
+  while any(abs.(beta[n]-[0;1]).<eps()) & (n > 2)
+    renum = renum[shift]
+    w = w[shift]
+    beta = beta[shift]
+    if renum[1]==1
+      deg = abs.(beta) .< eps()
+      w[deg] = []
+      beta[deg] = []
+      renum = 1:2
+      n = 2
+      break
+    end
+  end
+
+  p = Polygon(flipdim(w,1),1.-flipdim(beta,1))
+
   nqpts = max(ceil(Int,-log10(tol)),2)
   qdat = qdata(beta,nqpts)
 
@@ -730,7 +752,7 @@ function (I::DabsQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) wher
             argl = argr
             zetal = exp(im*argl)
             dist = min(1,2*minimum(abs.(I.zeta-zetal)/abs(zetal-zeta2)))
-            argr = argl + dist*(arg2-argl)
+            argr = argl + dist*(argz2-argl)
             nd = 0.5*((argr-argl)*qnode[:,n+1] + argr + argl)
             wt = 0.5*abs(argr-argl)*qwght[:,n+1]
             θ = hcat([(nd - argz[i] + 2π).%(2π) for i = 1:n]...)
@@ -790,6 +812,7 @@ end
 function depfunfull!(F,y,n,beta,nmlen,qdat)
 
   zeta, θ = y_to_zeta(y)
+
   mid = exp.(im*0.5*(θ[1:n-2]+θ[2:n-1]))
 
   dabsquad = DabsQuad(zeta,beta,qdat)
