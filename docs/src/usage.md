@@ -62,7 +62,7 @@ We can also evaluate the first and second derivative of the map at any place(s).
 Let's evaluate at a range of points outside the circle.
 ```@repl mapconstruct
 zeta = collect(1.1:0.1:2.0) + 0.1im
-dz,ddz = evalderiv(zeta,m)
+dz,ddz = evalderiv(zeta,m);
 dz
 ```
 ```@setup mapconstruct2
