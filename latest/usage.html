@@ -4,14 +4,14 @@
 julia&gt; p = Polygon(x,y)
 Polygon with 4 vertices at
              (-1.0,-1.0) (0.2,-1.0) (1.0,0.5) (-1.0,1.0)
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]</code></pre><p>Let&#39;s plot the polygon to make sure it matches what we wanted.</p><pre><code class="language-julia-repl">julia&gt; plot(p)</code></pre><object data="polygon4.svg" type="image/svg+xml"></object><p>Now, we create the map from the unit circle to the polygon.</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
+             interior angles/π = [0.5, 0.656, 0.422, 0.422]</code></pre><p>Let&#39;s plot the polygon to make sure it matches what we wanted.</p><pre><code class="language-julia-repl">julia&gt; plot(p)</code></pre><object data="polygon4.svg" type="image/svg+xml"></object><p><img src="polygon4.svg" alt/></p><p>Now, we create the map from the unit circle to the polygon.</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
 Exterior map with
    vertices: (-1.0,-1.0), (0.2,-1.0), (1.0,0.5), (-1.0,1.0),
    interior angles/π: 0.5, 0.656, 0.422, 0.422,
    prevertices on circle: (1.0,0.0), (0.3764,-0.9265), (-0.9024,-0.4309), (-0.1868,0.9824),
    prevertex angles/π: -0.7291, -0.3519, 0.1291, 0.7111,
    constant = 0.6722 + 0.7669im, accuracy = 1.0e-8,
-   number of multipole coefficients = 12</code></pre><p>Let&#39;s visualize what we&#39;ve constructed. Here, we will inspect the mapping from the exterior of the unit circle to the exterior of the polygon.</p><pre><code class="language-julia-repl">julia&gt; conformal_grid(m)</code></pre><object data="polygongrid.svg" type="image/svg+xml"></object><p>We can now easily evaluate the map at any place we like. It could be evaluated outside the unit circle:</p><pre><code class="language-julia-repl">julia&gt; zeta = 1.2 + 0.1im
+   number of multipole coefficients = 12</code></pre><p>Let&#39;s visualize what we&#39;ve constructed. Here, we will inspect the mapping from the exterior of the unit circle to the exterior of the polygon.</p><pre><code class="language-julia-repl">julia&gt; conformal_grid(m)</code></pre><p><img src="polygongrid.svg" alt/></p><p>We can now easily evaluate the map at any place we like. It could be evaluated outside the unit circle:</p><pre><code class="language-julia-repl">julia&gt; zeta = 1.2 + 0.1im
 1.2 + 0.1im
 
 julia&gt; evaluate(zeta,m)
@@ -32,8 +32,7 @@ julia&gt; evaluate(zeta,m,true)
  1.9+0.1im
  2.0+0.1im
 
-julia&gt; dz,ddz = evalderiv(zeta,m)
-(Complex{Float64}[0.872356-0.394475im, 0.901724-0.289355im, 0.925562-0.217994im, 0.944059-0.168264im, 0.958255-0.132657im, 0.96919-0.106522im, 0.977695-0.0869128im, 0.984389-0.0719115im, 0.989723-0.0602376im, 0.994025-0.0510144im], Complex{Float64}[0.315977+1.2762im, 0.267238+0.857267im, 0.210196+0.589784im, 0.161602+0.417036im, 0.124077+0.302663im, 0.0960033+0.224836im, 0.0751215+0.170488im, 0.0595077+0.131637im, 0.0477164+0.103279im, 0.0387064+0.0821937im])
+julia&gt; dz,ddz = evalderiv(zeta,m);
 
 julia&gt; dz
 10-element Array{Complex{Float64},1}:
@@ -92,7 +91,7 @@ Polygon with 16 vertices at
              (1.3,0.0) (0.6467156727579007,0.26787840265556284) (0.9192388155425119,0.9192388155425117) (0.26787840265556284,0.6467156727579007) (7.960204194457797e-17,1.3) (-0.2678784026555628,0.6467156727579007) (-0.9192388155425117,0.9192388155425119) (-0.6467156727579007,0.2678784026555629) (-1.3,1.5920408388915593e-16) (-0.6467156727579008,-0.26787840265556273) (-0.919238815542512,-0.9192388155425117) (-0.26787840265556323,-0.6467156727579005) (-2.3880612583373386e-16,-1.3) (0.267878402655563,-0.6467156727579007) (0.9192388155425116,-0.919238815542512) (0.6467156727579005,-0.26787840265556323)
              interior angles/π = [0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502]
 
-julia&gt; plot(p)</code></pre><object data="polygon8.svg" type="image/svg+xml"></object><p>Construct the map and plot it</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
+julia&gt; plot(p)</code></pre><p><img src="polygon8.svg" alt/></p><p>Construct the map and plot it</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
 Exterior map with
    vertices: (1.3,0.0), (0.6467,0.2679), (0.9192,0.9192), (0.2679,0.6467), (0.0,1.3), (-0.2679,0.6467), (-0.9192,0.9192), (-0.6467,0.2679), (-1.3,0.0), (-0.6467,-0.2679), (-0.9192,-0.9192), (-0.2679,-0.6467), (-0.0,-1.3), (0.2679,-0.6467), (0.9192,-0.9192), (0.6467,-0.2679),
    interior angles/π: 0.2477, 1.5023, 0.2477, 1.5023, 0.2477, 1.5023, 0.2477, 1.5023, 0.2477, 1.5023, 0.2477, 1.5023, 0.2477, 1.5023, 0.2477, 1.5023,
@@ -101,4 +100,4 @@ Exterior map with
    constant = -1.1279 - 0.0im, accuracy = 1.0e-8,
    number of multipole coefficients = 12
 
-julia&gt; conformal_grid(m)</code></pre><object data="polygongrid8.svg" type="image/svg+xml"></object><footer><hr/><a class="previous" href="index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="polygons.html"><span class="direction">Next</span><span class="title">Polygons</span></a></footer></article></body></html>
+julia&gt; conformal_grid(m)</code></pre><p><img src="polygongrid8.svg" alt/></p><footer><hr/><a class="previous" href="index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="polygons.html"><span class="direction">Next</span><span class="title">Polygons</span></a></footer></article></body></html>
