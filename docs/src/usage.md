@@ -65,3 +65,26 @@ zeta = collect(1.1:0.1:2.0) + 0.1im
 dz,ddz = evalderiv(zeta,m)
 dz
 ```
+
+Now let's try a more interesting shape. Here's a star-shaped body
+```@repl mapconstruct
+n = 8; dθ = 2π/(2n)
+θ = collect(0:dθ:2π-dθ)
+w = (1+0.3cos.(n*θ)).*exp.(im*θ)
+p = Polygon(w)
+plot(p)
+savefig("polygon8.svg",format="svg"); nothing # hide
+```
+```@raw html
+<object data="polygon8.svg" type="image/svg+xml"></object>
+```
+
+Construct the map and plot it
+```@repl mapconstruct
+m = ExteriorMap(p)
+conformal_grid(m)
+savefig("polygongrid.svg",format="svg"); nothing # hide
+```
+```@raw html
+<object data="polygongrid.svg" type="image/svg+xml"></object>
+```

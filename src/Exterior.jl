@@ -88,20 +88,22 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
   end
   J = 0.25*imag(sum(conj.(zmid).*dz.*(abs.(zmid).^2+abs.(dz).^2/12)))
 
-  zetainf = Complex128[40.0]
-  sigmainf = -c/abs(c)./zetainf
-  zinf = evaluate(sigmainf,w,beta,zeta,c,qdat)
-  a = zinf[1] - abs(c)*zetainf[1]
-
   # first two entries are for c₁ and c₀.
-  beta = flipdim(beta,1)
-  ccoeff = Complex128[abs(c),a]
-  mom = [sum(beta.*preprev)]
+  betaflip = flipdim(beta,1)
+  ccoeff = Complex128[abs(c),0.0]
+  mom = [sum(betaflip.*preprev)]
   for k = 1:ncoeff
-    push!(mom,sum(beta.*preprev.^(k+1)))
+    push!(mom,sum(betaflip.*preprev.^(k+1)))
     coeffk = abs(c)*getcoefflist(k+1,1,mom);
     push!(ccoeff,coeffk)
   end
+
+  # fix a
+  zetainf = 5.0*exp.(im*collect(0:π/2:3π/2))
+  sigmainf = -c/abs(c)./zetainf
+  zinf = evaluate(sigmainf,w,beta,zeta,c,qdat)
+  ccoeff[2] = mean([zinf[i]-sum(ccoeff.*zetainf[i].^(1:-1:-ncoeff))
+                  for i = 1:length(zetainf)])
 
   # first entry is d₀
   dcoeff = [dot(ccoeff,ccoeff)]
@@ -198,7 +200,7 @@ julia> ccoeff, dcoeff = coefficients(m);
 julia> ccoeff
 14-element Array{Complex{Float64},1}:
        1.0198+0.0im
-    -0.210443-0.015142im
+    -0.210364-0.0161983im
   -0.00655708+0.0398156im
      0.136922+0.0951343im
     -0.095035+0.0891769im
@@ -210,7 +212,7 @@ julia> ccoeff
   -0.00447511+0.00252069im
    0.00469089-0.00150588im
   0.000441767-0.00192516im
- -0.000381357-0.00174291im 
+ -0.000381357-0.00174291im
 ```
 """
 coefficients(m::ExteriorMap) = m.ccoeff, m.dcoeff
@@ -495,7 +497,7 @@ julia> evaluate(zeta,m)
 evaluate(zeta::Vector{Complex128},m::ExteriorMap) = evaluate(zeta,m,false)
 
 """
-    evaluate(zeta::Complex128,m::ExteriorMap...) -> Complex128
+    evaluate(zeta::Complex128,m...) -> Complex128
 
 Evaluates `m` at a single point `zeta`.
 """
@@ -576,7 +578,7 @@ julia> dz
 evalderiv(zeta::Vector{Complex128},m::ExteriorMap) = evalderiv(zeta,m,false)
 
 """
-    evalderiv(zeta::Complex128,m::ExteriorMap...) -> Tuple{Complex128,Complex128}
+    evalderiv(zeta::Complex128,m...) -> Tuple{Complex128,Complex128}
 
 Evaluates the derivatives of `m` at a single point `zeta`.
 """
