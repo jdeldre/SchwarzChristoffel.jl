@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Basic Usage",
     "title": "Basic usage",
     "category": "section",
-    "text": "DocTestSetup = quote\nsrand(1)\nendusing SchwarzChristoffelFirst, we create a polygon shape by specifying its vertices. Note that the vertices must be provided in counter-clockwise order.x = [-1.0,0.2,1.0,-1.0]; y = [-1.0,-1.0,0.5,1.0];\np = Polygon(x,y)Let\'s plot the polygon to make sure it matches what we wanted.plot(p)\nsavefig(\"polygon4.svg\",format=\"svg\"); nothing # hide<object data=\"polygon4.svg\" type=\"image/svg+xml\"></object>Now, we create the map from the unit circle to the polygon.m = ExteriorMap(p)Let\'s visualize what we\'ve constructed. Here, we will inspect the mapping from the exterior of the unit circle to the exterior of the polygon.conformal_grid(m)\nsavefig(\"polygongrid.svg\",format=\"svg\"); nothing # hide<object data=\"polygongrid.svg\" type=\"image/svg+xml\"></object>We can now easily evaluate the map at any place we like. It could be evaluated outside the unit circle:zeta = 1.2 + 0.1im\nevaluate(zeta,m)or it could be evaluated inside the unit circle:zeta = 0.5 + 0.1im\nevaluate(zeta,m,true)We can also evaluate the first and second derivative of the map at any place(s). Let\'s evaluate at a range of points outside the circle.zeta = collect(1.1:0.1:2.0) + 0.1im\ndz,ddz = evalderiv(zeta,m)\ndzNow let\'s try a more interesting shape. Here\'s a star-shaped bodyn = 8; dθ = 2π/(2n)\nθ = collect(0:dθ:2π-dθ)\nw = (1+0.3cos.(n*θ)).*exp.(im*θ)\np = Polygon(w)\nplot(p)\nsavefig(\"polygon8.svg\",format=\"svg\"); nothing # hide<object data=\"polygon8.svg\" type=\"image/svg+xml\"></object>Construct the map and plot itm = ExteriorMap(p)\nconformal_grid(m)\nsavefig(\"polygongrid.svg\",format=\"svg\"); nothing # hide<object data=\"polygongrid.svg\" type=\"image/svg+xml\"></object>"
+    "text": "DocTestSetup = quote\nsrand(1)\nendusing SchwarzChristoffelFirst, we create a polygon shape by specifying its vertices. Note that the vertices must be provided in counter-clockwise order.x = [-1.0,0.2,1.0,-1.0]; y = [-1.0,-1.0,0.5,1.0];\np = Polygon(x,y)Let\'s plot the polygon to make sure it matches what we wanted.plot(p)\nsavefig(\"polygon4.svg\",format=\"svg\"); nothing # hide<object data=\"polygon4.svg\" type=\"image/svg+xml\"></object>Now, we create the map from the unit circle to the polygon.m = ExteriorMap(p)Let\'s visualize what we\'ve constructed. Here, we will inspect the mapping from the exterior of the unit circle to the exterior of the polygon.conformal_grid(m)\nsavefig(\"polygongrid.svg\",format=\"svg\"); nothing # hide<object data=\"polygongrid.svg\" type=\"image/svg+xml\"></object>We can now easily evaluate the map at any place we like. It could be evaluated outside the unit circle:zeta = 1.2 + 0.1im\nevaluate(zeta,m)or it could be evaluated inside the unit circle:zeta = 0.5 + 0.1im\nevaluate(zeta,m,true)We can also evaluate the first and second derivative of the map at any place(s). Let\'s evaluate at a range of points outside the circle.zeta = collect(1.1:0.1:2.0) + 0.1im\ndz,ddz = evalderiv(zeta,m)\ndzusing SchwarzChristoffelNow let\'s try a more interesting shape. Here\'s a star-shaped bodyn = 8; dθ = 2π/(2n)\nθ = collect(0:dθ:2π-dθ)\nw = (1+0.3cos.(n*θ)).*exp.(im*θ)\np = Polygon(w)\nplot(p)\nsavefig(\"polygon8.svg\",format=\"svg\"); nothing # hide<object data=\"polygon8.svg\" type=\"image/svg+xml\"></object>Construct the map and plot itm = ExteriorMap(p)\nconformal_grid(m)\nsavefig(\"polygongrid8.svg\",format=\"svg\"); nothing # hide<object data=\"polygongrid8.svg\" type=\"image/svg+xml\"></object>"
 },
 
 {
@@ -77,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Polygons",
     "title": "SchwarzChristoffel.Polygons.vertex",
     "category": "function",
-    "text": "vertex(p::Polygon) -> -> Vector{Complex128}\n\nReturns the vector of vertices of the polygon p, in complex form.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> vertex(p)\n4-element Array{Complex{Float64},1}:\n -1.0-1.0im\n  0.2-1.0im\n  1.0+0.5im\n -1.0+1.0im\n\n\n\n"
+    "text": "vertex(p::Polygon) -> Vector{Complex128}\n\nReturns the vector of vertices of the polygon p, in complex form.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> vertex(p)\n4-element Array{Complex{Float64},1}:\n -1.0-1.0im\n  0.2-1.0im\n  1.0+0.5im\n -1.0+1.0im\n\n\n\n"
 },
 
 {
@@ -113,11 +113,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "polygons.html#SchwarzChristoffel.Polygons.naca4",
+    "page": "Polygons",
+    "title": "SchwarzChristoffel.Polygons.naca4",
+    "category": "function",
+    "text": "naca4(cam,pos,t[;np=20][,Zc=0.0+0.0im][,len=1.0]) -> Vector{Complex128}\n\nGenerates the vertices of a NACA 4-digit airfoil of chord length 1. The relative camber is specified by cam, the position of maximum camber (as fraction of chord) by pos, and the relative thickness by t.\n\nThe optional parameter np specifies the number of points on the upper or lower surface. The optional parameter Zc specifies the mean position of the vertices (which is set to the origin by default). The optional parameter len specifies the chord length.\n\nExample\n\njulia> w = naca4(0.0,0.0,0.12);\n\njulia> p = Polygon(w);\n\n\n\n"
+},
+
+{
     "location": "polygons.html#Methods-1",
     "page": "Polygons",
     "title": "Methods",
     "category": "section",
-    "text": "Polygons.Polygon\nPolygons.vertex\nPolygons.interiorangle\nBase.length(::Polygons.Polygon)\nBase.isinf(::Polygons.Polygon)\nPolygons.isinpoly"
+    "text": "Polygons.Polygon\nPolygons.vertex\nPolygons.interiorangle\nBase.length(::Polygons.Polygon)\nBase.isinf(::Polygons.Polygon)\nPolygons.isinpoly\nPolygons.naca4"
 },
 
 {
