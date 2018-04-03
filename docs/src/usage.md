@@ -26,6 +26,7 @@ savefig("polygon4.svg",format="svg"); nothing # hide
 ```@raw html
 <object data="polygon4.svg" type="image/svg+xml"></object>
 ```
+![](polygon4.svg)
 
 Now, we create the map from the unit circle to the polygon.
 
@@ -40,10 +41,8 @@ mapping from the exterior of the unit circle to the exterior of the polygon.
 conformal_grid(m)
 savefig("polygongrid.svg",format="svg"); nothing # hide
 ```
+![](polygongrid.svg)
 
-```@raw html
-<object data="polygongrid.svg" type="image/svg+xml"></object>
-```
 
 We can now easily evaluate the map at any place we like. It could be evaluated
 outside the unit circle:
@@ -78,9 +77,8 @@ p = Polygon(w)
 plot(p)
 savefig("polygon8.svg",format="svg"); nothing # hide
 ```
-```@raw html
-<object data="polygon8.svg" type="image/svg+xml"></object>
-```
+![](polygon8.svg)
+
 
 Construct the map and plot it
 ```@repl mapconstruct2
@@ -88,6 +86,4 @@ m = ExteriorMap(p)
 conformal_grid(m)
 savefig("polygongrid8.svg",format="svg"); nothing # hide
 ```
-```@raw html
-<object data="polygongrid8.svg" type="image/svg+xml"></object>
-```
+![](polygongrid8.svg)

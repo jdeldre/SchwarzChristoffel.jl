@@ -274,7 +274,7 @@ for j = 1:np
     else
         yc[j] = cam/(1-pos)^2*((1-2*pos)+2*pos*x[j]-x[j]^2)
         if pos > 0
-            th[j] = atan(2*cam*pos/(1-pos)^2*(1-x[j]/pos))
+            θ[j] = atan(2*cam*pos/(1-pos)^2*(1-x[j]/pos))
         end
     end
 end
