@@ -51,7 +51,7 @@ Polygon with 4 vertices at
 Polygon(w::Vector{Complex128}) = Polygon(w,interiorangle(w))
 
 """
-    vertex(p::Polygon) -> -> Vector{Complex128}
+    vertex(p::Polygon) -> Vector{Complex128}
 
 Returns the vector of vertices of the polygon `p`, in complex form.
 

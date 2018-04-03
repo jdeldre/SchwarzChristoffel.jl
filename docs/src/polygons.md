@@ -15,6 +15,7 @@ Polygons.interiorangle
 Base.length(::Polygons.Polygon)
 Base.isinf(::Polygons.Polygon)
 Polygons.isinpoly
+Polygons.naca4
 ```
 
 ## Index
