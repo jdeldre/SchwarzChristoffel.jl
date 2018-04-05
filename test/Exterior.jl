@@ -6,10 +6,10 @@
   z = [1.0im,-1.0,-1.0im,1.0]
   nqpts = 8
   qdat = SchwarzChristoffel.Integration.qdata(beta,nqpts)
-  dquad = SchwarzChristoffel.Exterior.DQuad(z,beta,qdat)
-  @test dquad(z1,z2,sing1) ≈ -0.599070117 - 0.599070117im
-  dabsquad = SchwarzChristoffel.Exterior.DabsQuad(z,beta,qdat)
-  @test dabsquad(z1,z2,sing1) ≈ 0.847213085
+  dquad = SchwarzChristoffel.Exterior.DQuad(beta,qdat)
+  @test dquad([z1],[z2],[sing1],z)[1] ≈ -0.599070117 - 0.599070117im
+  dabsquad = SchwarzChristoffel.Exterior.DabsQuad(beta,qdat)
+  @test dabsquad([z1],[z2],[sing1],z)[1] ≈ 0.847213085
 
   p = SchwarzChristoffel.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
   map = SchwarzChristoffel.ExteriorMap(p)

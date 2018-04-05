@@ -349,19 +349,23 @@ function param(w::Vector{Complex128},beta::Vector{Float64},
       @. y0 = log(dt[1:n-1]/dt[2:n])
     end
 
-    depfun!(F,y) = depfunfull!(F,y,n,beta,nmlen,qdat)
+    #depfun!(F,y) = depfunfull!(F,y,n,beta,nmlen,qdat)
+    #dabsquad = DabsQuad(beta,qdat)
+    depfun! = Depfun(beta,nmlen,qdat)
 
     F0 = similar(y0)
     df = OnceDifferentiable(depfun!, y0, F0)
-    sol = nlsolve(depfun!,y0,show_trace = :false)
+    sol = nlsolve(df,y0,show_trace = :false)
 
-    zeta, θ = y_to_zeta(sol.zero)
+    zeta = zeros(Complex128,n)
+    θ = zeros(n-1)
+    y_to_zeta!(zeta,θ,sol.zero)
 
   end
 
   mid = zeta[1]*exp(0.5*im*angle(zeta[2]/zeta[1]))
-  dequad = DQuad(zeta,beta,qdat)
-  c = (w[2]-w[1])/(dequad(zeta[1],mid,1)-dequad(zeta[2],mid,2))
+  dequad = DQuad(beta,qdat)
+  c = (w[2]-w[1])/(dequad([zeta[1]],[mid],[1],zeta)[1]-dequad([zeta[2]],[mid],[2],zeta)[1])
 
   return zeta, c
 
@@ -382,7 +386,7 @@ function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
   tol = 10.0^(-size(qdat[1],1))
 
   # set up the integrator
-  dequad = DQuad(prev,beta,qdat)
+  dequad = DQuad(beta,qdat)
 
   # initialize the mapped evaluation points
   wp = zeros(Complex128,neval)
@@ -425,7 +429,7 @@ function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
     zetanew[unf] = zetaold[unf] + dist[unf].*(zeta[unf]-zetaold[unf])
 
     # integrate
-    wp[unf] = wp[unf] + c*dequad.(zetaold[unf],zetanew[unf],sing[unf])
+    wp[unf] = wp[unf] + c*dequad(zetaold[unf],zetanew[unf],sing[unf],prev)
 
     # set new starting integration points for those that can be integrated
     #  further
@@ -673,133 +677,149 @@ function madvance(P)
 
 end
 
-struct DabsQuad{n}
-  zeta :: Vector{Complex128}
-  beta :: Vector{Float64}
-  nqpts :: Int64
-  qdat :: Tuple{Array{Float64,2},Array{Float64,2}}
+#######
+
+struct DabsQuad{T,N,NQ}
+  beta :: Vector{T}
+  qdat :: Tuple{Array{T,2},Array{T,2}}
 end
 
-function DabsQuad(zeta::Vector{Complex128},beta::Vector{Float64},tol::Float64)
-  n = length(zeta)
+function DabsQuad(beta::Vector{T},tol::T) where T
+  n = length(beta)
   nqpts = max(ceil(Int,-log10(tol)),2)
   qdat = qdata(beta,nqpts)
-  DabsQuad{n}(zeta,beta,nqpts,qdat)
+  DabsQuad{T,n,nqpts}(beta,qdat)
 end
 
-function DabsQuad(zeta::Vector{Complex128},beta::Vector{Float64},
-                  qdat::Tuple{Array{Float64,2},Array{Float64,2}})
-  n = length(zeta)
+function DabsQuad(beta::Vector{T},
+                  qdat::Tuple{Array{T,2},Array{T,2}}) where T
+  n = length(beta)
   nqpts = size(qdat[1],1)
-  DabsQuad{n}(zeta,beta,nqpts,qdat)
+  DabsQuad{T,n,nqpts}(beta,qdat)
 end
 
-struct DQuad{n}
-  zeta :: Vector{Complex128}
-  beta :: Vector{Float64}
-  nqpts :: Int64
-  qdat :: Tuple{Array{Float64,2},Array{Float64,2}}
-end
-
-function DQuad(zeta::Vector{Complex128},beta::Vector{Float64},tol::Float64)
-  n = length(zeta)
-  nqpts = max(ceil(Int,-log10(tol)),2)
-  qdat = qdata(beta,nqpts)
-  DQuad{n}(zeta,beta,nqpts,qdat)
-end
-
-function DQuad(zeta::Vector{Complex128},beta::Vector{Float64},
-               qdat::Tuple{Array{Float64,2},Array{Float64,2}})
-  n = length(zeta)
-  nqpts = size(qdat[1],1)
-  DQuad{n}(zeta,beta,nqpts,qdat)
-end
-
-
-function (I::DabsQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
+function (I::DabsQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},sing1::Vector{Int64},zeta::Vector{Complex128}) where {T,N,NQ}
 
    (qnode,qwght) = I.qdat
-   argz = angle.(I.zeta)
+   argz = angle.(zeta)
 
-   argz1 = angle(zeta1)
-   argz2 = angle(zeta2)
-   ang21 = angle(zeta2/zeta1)
+   argz1 = angle.(zeta1)
+   argz2 = angle.(zeta2)
+   ang21 = angle.(zeta2./zeta1)
 
-   if (argz2-argz1)*ang21 < 0
-      argz2 += 2π*sign(ang21)
-   end
+   bigargz = transpose(argz[:,ones(Int,NQ)])
+
+   discont = (argz2-argz1).*ang21 .< 0
+   argz2[discont] += 2π*sign.(ang21[discont])
+
    if isempty(sing1)
-     sing1 = 0
+     sing1 = zeros(size(zeta1))
    end
-   result = 0.0
-   if zeta1 != zeta2
-     zetas = [I.zeta[1:sing1-1];I.zeta[sing1+1:end]]
-     dist = min(1,2*minimum(abs.(zetas-zeta1))/abs(zeta2-zeta1))
-     argr = argz1 + dist*(argz2-argz1)
-     ind = ((sing1+n) % (n+1)) + 1
-     nd = 0.5*((argr-argz1)*qnode[:,ind] + argr + argz1)
-     wt = 0.5*abs(argr-argz1)*qwght[:,ind]
-     θ = hcat([(nd - argz[i] + 2π).%(2π) for i = 1:n]...)
+   result = zeros(Float64,size(zeta1))
+
+   nontriv = find(zeta1.!=zeta2)
+    #tic()
+   for k in nontriv
+     z1k, z2k, arg1k, arg2k, sing1k =
+          zeta1[k], zeta2[k], argz1[k], argz2[k], sing1[k]
+     zetas = vcat(zeta[1:sing1k-1],zeta[sing1k+1:end])
+     dist = min(1,2*minimum(abs.(zetas-z1k))/abs(z2k-z1k))
+     argr = arg1k + dist*(arg2k-arg1k)
+     ind = ((sing1k+N) % (N+1)) + 1
+     nd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
+     wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
+     θ = (nd[:,ones(Int,N)]-bigargz.+2π).%(2π)
      θ[θ.>π] = 2π-θ[θ.>π]
      terms = 2sin.(0.5θ)
      if !any(terms==0.0)
-        if sing1 > 0
-            terms[:,sing1] ./= abs.(nd-argz1)
-            wt .*= (0.5*abs.(argr-argz1)).^I.beta[sing1]
+        if sing1k > 0
+            terms[:,sing1k] ./= abs.(nd-arg1k)
+            wt .*= (0.5*abs.(argr-arg1k)).^I.beta[sing1k]
         end
-        result = transpose(exp.(log.(terms)*I.beta))*wt
+        result[k] = At_mul_B(exp.(log.(terms)*I.beta),wt)
         while dist < 1.0
             argl = argr
             zetal = exp(im*argl)
-            dist = min(1,2*minimum(abs.(I.zeta-zetal)/abs(zetal-zeta2)))
-            argr = argl + dist*(argz2-argl)
-            nd = 0.5*((argr-argl)*qnode[:,n+1] + argr + argl)
-            wt = 0.5*abs(argr-argl)*qwght[:,n+1]
-            θ = hcat([(nd - argz[i] + 2π).%(2π) for i = 1:n]...)
+            dist = min(1,2*minimum(abs.(zeta-zetal)/abs(zetal-z2k)))
+            argr = argl + dist*(arg2k-argl)
+            nd = 0.5*((argr-argl)*qnode[:,N+1] + argr + argl)
+            wt = 0.5*abs(argr-argl)*qwght[:,N+1]
+            #θ = hcat([(nd - argz[i] + 2π).%(2π) for i = 1:N]...)
+            θ = (nd[:,ones(Int,N)]-bigargz.+2π).%(2π)
             θ[θ.>π] = 2π-θ[θ.>π]
             terms = 2sin.(0.5θ)
-            result += transpose(exp.(log.(terms)*I.beta))*wt
+            result[k] += At_mul_B(exp.(log.(terms)*I.beta),wt)
         end
-    end
+     end
    end
+    #toc()
+    #nothing
    return result
 end
 
-function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
+struct DQuad{T,N,NQ}
+  beta :: Vector{T}
+  qdat :: Tuple{Array{T,2},Array{T,2}}
+end
+
+function DQuad(beta::Vector{T},tol::T) where T
+  n = length(beta)
+  nqpts = max(ceil(Int,-log10(tol)),2)
+  qdat = qdata(beta,nqpts)
+  DQuad{T,n,nqpts}(beta,qdat)
+end
+
+function DQuad(beta::Vector{T},
+                  qdat::Tuple{Array{T,2},Array{T,2}}) where T
+  n = length(beta)
+  nqpts = size(qdat[1],1)
+  DQuad{T,n,nqpts}(beta,qdat)
+end
+
+
+function (I::DQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
+          sing1::Vector{Int64},zeta::Vector{Complex128}) where {T,N,NQ}
 
    (qnode,qwght) = I.qdat
 
    beta = [I.beta;-2]
 
-   if isempty(sing1)
-     sing1 = 0
-   end
-   result = Complex128[0]
-   if zeta1 != zeta2
-     zetas = [I.zeta[1:sing1-1];I.zeta[sing1+1:end]]
-     dist = min(1,2*minimum(abs.(zetas-zeta1))/abs(zeta2-zeta1))
-     zetar = zeta1 + dist*(zeta2-zeta1)
-     ind = sing1 + (n+1)*(sing1==0)
+   bigzeta = transpose(zeta[:,ones(Int,NQ)])
 
-     nd = 0.5*((zetar-zeta1)*qnode[:,ind] + zetar + zeta1)
-     wt = 0.5*(zetar-zeta1)*qwght[:,ind]
-     terms = hcat([1 .- nd/I.zeta[i] for i = 1:n]...)
+   if isempty(sing1)
+     sing1 = zeros(Int,size(zeta1))
+   end
+   result = zeros(Complex128,size(zeta1))
+
+   nontriv = find(zeta1.!=zeta2)
+    #tic()
+   for k in nontriv
+     z1k, z2k, sing1k = zeta1[k], zeta2[k], sing1[k]
+     zetas = vcat(zeta[1:sing1k-1],zeta[sing1k+1:end])
+     dist = min(1,2*minimum(abs.(zetas-z1k))/abs(z2k-z1k))
+     zetar = z1k + dist*(z2k-z1k)
+     ind = sing1k + (N+1)*(sing1k==0)
+
+     nd = 0.5*((zetar-z1k)*qnode[:,ind] + zetar + z1k)
+     wt = 0.5*(zetar-z1k)*qwght[:,ind]
+     terms = 1 .- nd[:,ones(Int,N)]./bigzeta
      if !any(terms==0.0)
        terms = hcat(terms,nd)
-        if sing1 > 0
-            terms[:,sing1] ./= abs.(terms[:,sing1])
-            wt .*= (0.5*abs.(zetar-zeta1)).^beta[sing1]
+        if sing1k > 0
+            terms[:,sing1k] ./= abs.(terms[:,sing1k])
+            wt .*= (0.5*abs.(zetar-z1k)).^beta[sing1k]
         end
-        result = transpose(exp.(log.(terms)*beta))*wt
+        result[k] = At_mul_B(exp.(log.(terms)*beta),wt)
+
         while dist < 1.0
             zetal = zetar
-            dist = min(1,2*minimum(abs.(I.zeta-zetal)/abs(zetal-zeta2)))
-            zetar = zetal + dist*(zeta2-zetal)
-            nd = 0.5*((zetar-zetal)*qnode[:,n+1] + zetar + zetal)
-            wt = 0.5*(zetar-zetal)*qwght[:,n+1]
-            terms = hcat([1 .- nd/I.zeta[i] for i = 1:n]...)
+            dist = min(1,2*minimum(abs.(zeta-zetal)/abs(zetal-z2k)))
+            zetar = zetal + dist*(z2k-zetal)
+            nd = 0.5*((zetar-zetal)*qnode[:,N+1] + zetar + zetal)
+            wt = 0.5*(zetar-zetal)*qwght[:,N+1]
+            terms = 1 .- nd[:,ones(Int,N)]./bigzeta
             terms = hcat(terms,nd)
-            result += transpose(exp.(log.(terms)*beta))*wt
+            result[k] += At_mul_B(exp.(log.(terms)*beta),wt)
         end
       end
     end
@@ -807,37 +827,60 @@ function (I::DQuad{n})(zeta1::Complex128,zeta2::Complex128,sing1::Int64) where n
 end
 
 
-
-
-function depfunfull!(F,y,n,beta,nmlen,qdat)
-
-  zeta, θ = y_to_zeta(y)
-
-  mid = exp.(im*0.5*(θ[1:n-2]+θ[2:n-1]))
-
-  dabsquad = DabsQuad(zeta,beta,qdat)
-  #dabsquad(z1,z2,sing1) = dabsquad(z1,z2,sing1,zeta,beta,qdat)
-
-  ints = dabsquad.(zeta[1:n-2],mid,collect(1:n-2))+dabsquad.(zeta[2:n-1],mid,collect(2:n-1))
-
-  if n > 3
-    F[1:n-3] = abs.(ints[2:n-2])/abs(ints[1]) - nmlen
-  end
-
-  res = -sum(beta./zeta)/ints[1]
-  F[n-2] = real(res)
-  F[n-1] = imag(res)
-
+struct Depfun{T,N,NQ}
+    zeta :: Vector{Complex{T}}
+    beta :: Vector{T}
+    nmlen :: Vector{T}
+    qdat :: Tuple{Array{T,2},Array{T,2}}
+    θ    :: Vector{T}
+    mid  :: Vector{Complex{T}}
+    ints :: Vector{T}
+    dabsquad :: DabsQuad{T,N,NQ}
 end
 
-function y_to_zeta(y::Vector{Float64})
+function Depfun(beta::Vector{T},nmlen::Vector{T},qdat:: Tuple{Array{T,2},Array{T,2}}) where T
+    # should compute nmlen in here
+    n = length(beta)
+    nqpts = size(qdat[1],1)
+    zeta = zeros(Complex128,n)
+    θ = zeros(n-1)
+    mid = zeros(Complex128,n-2)
+    ints = zeros(Complex128,n-2)
+    dabsquad = DabsQuad(beta,qdat)
+    Depfun{T,n,nqpts}(zeta,beta,nmlen,qdat,θ,mid,ints,dabsquad)
+end
+
+function (R::Depfun{T,N,NQ})(F,y) where {T,N,NQ}
+
+
+  y_to_zeta!(R.zeta,R.θ,y)
+
+  @. R.mid = exp(im*0.5*(R.θ[1:N-2]+R.θ[2:N-1]))
+
+  #tic()
+  R.ints .= R.dabsquad(R.zeta[1:N-2],R.mid,collect(1:N-2),R.zeta)
+  R.ints .+= R.dabsquad(R.zeta[2:N-1],R.mid,collect(2:N-1),R.zeta)
+
+  #toc()
+
+  if N > 3
+    @. F[1:N-3] = abs(R.ints[2:N-2])/abs(R.ints[1]) - R.nmlen
+  end
+
+  res = -sum(R.beta./R.zeta)/R.ints[1]
+  @. F[N-2] = real(res)
+  @. F[N-1] = imag(res)
+end
+
+
+function y_to_zeta!(zeta::Vector{Complex{T}},
+                    θ::Vector{T},y::Vector{T}) where T
 
   cs = cumsum(cumprod([1;exp.(-y)]))
   n = length(cs)
-  θ = 2π*cs[1:n-1]./cs[n]
-  zeta = ones(Complex128,n)
-  zeta[1:n-1] = exp.(im*θ)
-  return zeta, θ
+  @. θ = 2π*cs[1:n-1]/cs[n]
+  zeta[n] = 1.0
+  @. zeta[1:n-1] = exp(im*θ)
 
 end
 
