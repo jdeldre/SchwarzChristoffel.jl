@@ -11,23 +11,49 @@ export ExteriorMap,evaluate,evalderiv,parameters,coefficients,
 
 struct ExteriorMap <: Map
 
-  vertex :: Vector{Complex128}
+  "Coordinates of vertices on the polygon, defined ccw"
+  z :: Vector{Complex128}
+
+  "Interior angles in the polygon"
   angle  :: Vector{Float64}
+
+  "Quadrature nodes and weights for the Gauss-Jacobi"
   qdata  :: Tuple{Array{Float64,2},Array{Float64,2}}
+
+  "Accuracy of the quadrature"
   accuracy  :: Float64
 
-  prevertex :: Vector{Complex128}
+  "Coordinates of the prevertices on the unit circle (interior)"
+  ζ :: Vector{Complex128}
+
+  "Constant factor of the mapping"
   constant  :: Complex128
 
+  "Coordinates of the pre-prevertices on the unit circle (exterior)"
   preprev   :: Vector{Complex128}
+
+  "Angular locations of the pre-prevertices on the unit circle (exterior)"
   prevangle :: Vector{Float64}
+
+  "Number of multipole coefficients"
   ncoeff    :: Int64
+
+  "Multipole coefficients for z(ζ). ccoeff[1] -> c₁, ccoeff[2] -> c₀, etc."
   ccoeff    :: Vector{Complex128}
+
+  "Multipole coefficients for |z(ζ)|². dcoeff[1] -> d₀, doceff[2] -> d₋₁, etc."
   dcoeff    :: Vector{Complex128}
+
+  "Moments of prevertices"
   mom       :: Vector{Complex128}
 
+  "Area enclosed by the mapped polygon"
   area      :: Float64
+
+  "Centroid of the mapped polygon"
   Zc        :: Complex128
+
+  "2nd area moment of the mapped polygon"
   J         :: Float64
 
 end
@@ -35,7 +61,7 @@ end
 """
     ExteriorMap(p::Polygon[;tol::Float64][,ncoeff::Int])
 
-Create a Schwarz-Christoffel  from the interior or exterior of
+Create a Schwarz-Christoffel map from the interior or exterior of
 the unit circle to the exterior of polygon `p`.
 
 # Example
@@ -141,12 +167,12 @@ function Base.show(io::IO, m::ExteriorMap)
     println(io, "Exterior map with")
     print(io,   "   ")
     print(io,"vertices: ")
-    for i = 1:length(m.vertex)
-        print(io,"($(round(real(m.vertex[i]),4)),$(round(imag(m.vertex[i]),4))), ")
+    for i = 1:length(m.z)
+        print(io,"($(round(real(m.z[i]),4)),$(round(imag(m.z[i]),4))), ")
     end
     println(io)
-    #for i = 1:length(m.vertex)
-    #println(io, "       $(round(m.vertex[i],4))")
+    #for i = 1:length(m.z)
+    #println(io, "       $(round(m.z[i],4))")
     #end
     print(io,"   ")
     print(io, "interior angles/π: ")
@@ -156,8 +182,8 @@ function Base.show(io::IO, m::ExteriorMap)
     println(io)
     print(io,"   ")
     print(io, "prevertices on circle: ")
-    for i = length(m.prevertex):-1:1
-        print(io,"($(round(real(m.prevertex[i]),4)),$(round(imag(m.prevertex[i]),4))), ")
+    for i = length(m.ζ):-1:1
+        print(io,"($(round(real(m.ζ[i]),4)),$(round(imag(m.ζ[i]),4))), ")
     end
     println(io)
     print(io, "   ")
@@ -201,7 +227,7 @@ julia> prev
 """
 
 
-parameters(m::ExteriorMap) = flipdim(m.prevertex,1), m.constant
+parameters(m::ExteriorMap) = flipdim(m.ζ,1), m.constant
 
 """
     coefficients(m::ExteriorMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
@@ -349,8 +375,6 @@ function param(w::Vector{Complex128},beta::Vector{Float64},
       @. y0 = log(dt[1:n-1]/dt[2:n])
     end
 
-    #depfun!(F,y) = depfunfull!(F,y,n,beta,nmlen,qdat)
-    #dabsquad = DabsQuad(beta,qdat)
     depfun! = Depfun(beta,nmlen,qdat)
 
     F0 = similar(y0)
@@ -485,16 +509,16 @@ julia> evaluate(zeta,m,true)
 function evaluate(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool)
 
   if inside
-    return evaluate(zeta,flipdim(m.vertex,1),1.-flipdim(m.angle,1),
-            m.prevertex,m.constant,m.qdata)
+    return evaluate(zeta,flipdim(m.z,1),1.-flipdim(m.angle,1),
+            m.ζ,m.constant,m.qdata)
   else
     b = -m.constant/abs(m.constant)
     zeta[zeta.==0] = eps();
     zeta[abs.(zeta).<1] = zeta[abs.(zeta).<1]./abs.(zeta[abs.(zeta).<1])
 
     sigma = b./zeta
-    return evaluate(sigma,flipdim(m.vertex,1),1.-flipdim(m.angle,1),
-            m.prevertex,m.constant,m.qdata)
+    return evaluate(sigma,flipdim(m.z,1),1.-flipdim(m.angle,1),
+            m.ζ,m.constant,m.qdata)
   end
 end
 
@@ -559,7 +583,7 @@ julia> dz
 function evalderiv(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool)
 
   if inside
-    return evalderiv(zeta,1.-flipdim(m.angle,1),m.prevertex,m.constant)
+    return evalderiv(zeta,1.-flipdim(m.angle,1),m.ζ,m.constant)
   else
     b = -m.constant/abs(m.constant)
     zeta[zeta.==0] = eps();
@@ -568,7 +592,7 @@ function evalderiv(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool)
     sigma = b./zeta
     dsigma = -sigma./zeta
     ddsigma = -2.0*dsigma./zeta
-    dz, ddz = evalderiv(sigma,1.-flipdim(m.angle,1),m.prevertex,m.constant)
+    dz, ddz = evalderiv(sigma,1.-flipdim(m.angle,1),m.ζ,m.constant)
     ddz = ddz.*dsigma.^2 + dz.*ddsigma
     dz .*= dsigma
     return dz, ddz

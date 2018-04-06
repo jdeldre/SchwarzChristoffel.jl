@@ -23,9 +23,6 @@ plot(p)
 savefig("polygon4.svg",format="svg"); nothing # hide
 ```
 
-```@raw html
-<object data="polygon4.svg" type="image/svg+xml"></object>
-```
 ![](polygon4.svg)
 
 Now, we create the map from the unit circle to the polygon.
