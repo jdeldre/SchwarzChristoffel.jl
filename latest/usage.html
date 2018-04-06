@@ -4,7 +4,7 @@
 julia&gt; p = Polygon(x,y)
 Polygon with 4 vertices at
              (-1.0,-1.0) (0.2,-1.0) (1.0,0.5) (-1.0,1.0)
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]</code></pre><p>Let&#39;s plot the polygon to make sure it matches what we wanted.</p><pre><code class="language-julia-repl">julia&gt; plot(p)</code></pre><object data="polygon4.svg" type="image/svg+xml"></object><p><img src="polygon4.svg" alt/></p><p>Now, we create the map from the unit circle to the polygon.</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
+             interior angles/π = [0.5, 0.656, 0.422, 0.422]</code></pre><p>Let&#39;s plot the polygon to make sure it matches what we wanted.</p><pre><code class="language-julia-repl">julia&gt; plot(p)</code></pre><p><img src="polygon4.svg" alt/></p><p>Now, we create the map from the unit circle to the polygon.</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
 Exterior map with
    vertices: (-1.0,-1.0), (0.2,-1.0), (1.0,0.5), (-1.0,1.0),
    interior angles/π: 0.5, 0.656, 0.422, 0.422,
