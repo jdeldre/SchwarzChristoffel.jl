@@ -9,7 +9,9 @@ end
 ## Methods
 
 ```@docs
+Exterior.PowerMap
 Exterior.ExteriorMap
+Exterior.length
 Exterior.parameters
 Exterior.coefficients
 Exterior.moments

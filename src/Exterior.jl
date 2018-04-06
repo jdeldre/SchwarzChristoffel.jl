@@ -5,11 +5,146 @@ using ..Properties
 using ..Polygons
 using ..Integration
 
-export ExteriorMap,evaluate,evalderiv,parameters,coefficients,
+export PowerMap,ExteriorMap,evaluate,evalderiv,parameters,coefficients,
         moments,area,centroid,Jmoment
 
 
+struct PowerMap <: Map
+    "power series coefficients, ccoeff[1] -> c₁, ccoeff[2] -> c₀, ccoeff[3] -> c₋₁, etc"
+    ccoeff::Vector{Complex128}
+
+    "number of multipole coefficients (in addition to c₁ and c₀)"
+    ncoeff::Int
+
+    "number of plotting control points"
+    N::Int
+
+    "control point coordinates in circle space"
+    ζ::Vector{Complex128}
+
+    "control point coordinates in body-fixed space"
+    z::Vector{Complex128}
+
+    "map Jacobian in body-fixed coordinates"
+    dzdζ::Vector{Complex128}
+
+    "coefficients of power series of |z̃(ζ)|²"
+    dcoeff::Vector{Complex128}
+
+    "Area enclosed by the mapped shape"
+    area      :: Float64
+
+    "Centroid of the mapped shape"
+    Zc        :: Complex128
+
+    "2nd area moment of the mapped shape"
+    J         :: Float64
+
+end
+
+circle(N) = [exp(im*2π*(i-1)/N) for i in 1:N]
+
+"""
+    PowerMap <: Map
+
+Create a power series map from the exterior of the unit
+circle to the exterior of a shape defined by the power series coefficients.
+
+# Example
+
+```jldoctest
+julia> c = Complex128[1,0,1/4];
+
+julia> m = PowerMap(c)
+Power series map:
+   multipole coefficients: c₁ = 1.0 + 0.0im, c₀ = 0.0 + 0.0im, c₋ᵢ = 0.25 + 0.0im, i = 1:1
+```
+"""
+function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
+  # Must have at least two entries. If no entries, make leading entry
+  # a 1 (an identity map)
+  if isempty(ccoeff)
+    push!(ccoeff,1)
+  end
+  # if only one entry, add a zero for c₀
+  if length(ccoeff) == 1
+    push!(ccoeff,0)
+  end
+  ncoeff = length(ccoeff)-2
+
+  ζ = circle(N)
+  z = powerseries(ζ,ccoeff)
+  dzdζ = d_powerseries(ζ,ccoeff)
+
+
+  # first entry is d₀
+  dcoeff = [dot(ccoeff,ccoeff)]
+  for k = 1:ncoeff+1
+      push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
+  end
+
+  area = -π*sum((-1:ncoeff).*abs.(ccoeff).^2)
+
+  if area > 0
+    Zc = -π/area*(-ccoeff[1]*dcoeff[2]+
+              sum((1:ncoeff).*ccoeff[3:ncoeff+2].*conj.(dcoeff[2:ncoeff+1])))
+  else
+    Zc = mean(z)
+  end
+  # fix this!
+  J = 0.0
+
+
+  PowerMap(ccoeff, ncoeff, N, ζ, z, dzdζ, dcoeff, area, Zc, J)
+end
+
+function Base.show(io::IO, m::PowerMap)
+    println(io, "Power series map:")
+    print(io, "   multipole coefficients: c₁ = $(m.ccoeff[1]), ")
+    print(io, "c₀ = $(m.ccoeff[2]), ")
+    print(io,"c₋ᵢ = ")
+    for i = 1:m.ncoeff
+      print(io,"$(m.ccoeff[2+i]), ")
+    end
+    println(io, "i = 1:$(m.ncoeff)")
+end
+
+function powerseries(ζ::Complex128,C::Vector{Complex128})
+  ζⁿ = ζ
+  z = zero(ζ)
+  for c in C
+    z += c*ζⁿ
+    ζⁿ /= ζ
+  end
+  z
+end
+
+powerseries(ζs::Vector{Complex128},C::Vector{Complex128}) = [powerseries(ζ,C) for ζ in ζs]
+
+function d_powerseries(ζ::Complex128,C::Vector{Complex128})
+  dzdζ = C[1]
+  ζⁿ = 1/ζ^2
+  for n in 1:length(C)-2
+    dzdζ -= n*C[n+2]*ζⁿ
+    ζⁿ /= ζ
+  end
+  dzdζ
+end
+
+d_powerseries(ζs::Vector{Complex128},C::Vector{Complex128}) = [d_powerseries(ζ,C) for ζ in ζs]
+
+
+
+#jacobian(m::PowerMap) = m.dzds
+
+
+
+#=   Exterior map from to polygon  =#
+
 struct ExteriorMap <: Map
+
+  "Number of vertices on polygon"
+  N :: Int
 
   "Coordinates of vertices on the polygon, defined ccw"
   z :: Vector{Complex128}
@@ -70,7 +205,7 @@ the unit circle to the exterior of polygon `p`.
 julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 
 julia> m = ExteriorMap(p)
-Exterior map with
+Exterior map with 4 vertices
    vertices: (-1.0,-1.0), (0.2,-1.0), (1.0,0.5), (-1.0,1.0),
    interior angles/π: 0.5, 0.656, 0.422, 0.422,
    prevertices on circle: (1.0,0.0), (0.3764,-0.9265), (-0.9024,-0.4309), (-0.1868,0.9824),
@@ -159,12 +294,12 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
     push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
   end
 
-  ExteriorMap(p.vert,p.angle,qdat,tol,zeta,c,preprev,prevangle,
+  ExteriorMap(n,p.vert,p.angle,qdat,tol,zeta,c,preprev,prevangle,
               ncoeff,ccoeff,dcoeff,mom,area,Zc,J)
 end
 
 function Base.show(io::IO, m::ExteriorMap)
-    println(io, "Exterior map with")
+    println(io, "Exterior map with $(m.N) vertices")
     print(io,   "   ")
     print(io,"vertices: ")
     for i = 1:length(m.z)
@@ -203,10 +338,29 @@ function Base.show(io::IO, m::ExteriorMap)
 end
 
 """
+    length(m::Map) -> Integer
+
+Returns the number of control points/vertices of the map `m`.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> m = ExteriorMap(p);
+
+julia> length(m)
+4
+```
+"""
+Base.length(m::Map) = m.N
+
+
+"""
     parameters(m::ExteriorMap) -> Tuple{Vector{Complex128},Complex128}
 
 Returns a tuple of a vector of the prevertices and the complex factor of
-the mapping `m`.
+the exterior polygon mapping `m`.
 
 # Example
 
@@ -225,12 +379,10 @@ julia> prev
  -0.186756+0.982406im
 ```
 """
-
-
 parameters(m::ExteriorMap) = flipdim(m.ζ,1), m.constant
 
 """
-    coefficients(m::ExteriorMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
+    coefficients(m::Map) -> Tuple{Vector{Complex128},Vector{Complex128}}
 
 Returns a tuple of vectors of the complex coefficients of the multipole
 expansion of the mapping \$z(\\zeta)\$ described by `m` as well as the
@@ -263,12 +415,12 @@ julia> ccoeff
  -0.000381357-0.00174291im
 ```
 """
-coefficients(m::ExteriorMap) = m.ccoeff, m.dcoeff
+coefficients(m::Map) = m.ccoeff, m.dcoeff
 
 """
     moments(m::ExteriorMap) -> Vector{Complex128}
 
-Return the moments of the prevertices for mapping `m`.
+Return the moments of the prevertices for exterior polygon mapping `m`.
 
 # Example
 
@@ -297,9 +449,9 @@ julia> mom = moments(m)
 moments(m::ExteriorMap) = m.mom
 
 """
-    area(m::ExteriorMap) -> Float64
+    area(m::Map) -> Float64
 
-Returns the area of the polygon described by the mapping `m`.
+Returns the area of the shape described by the mapping `m`.
 
 # Example
 
@@ -311,13 +463,26 @@ julia> m = ExteriorMap(p);
 julia> area(m)
 2.9
 ```
-"""
-area(m::ExteriorMap) = m.area
+
+```jldoctest
+julia> c = Complex128[1];
+
+julia> m = PowerMap(p);
+
+julia> area(m)
+3.141592653589793
+```
 
 """
-    centroid(m::ExteriorMap) -> Complex128
+area(m::Map) = m.area
 
-Returns the complex centroid position of the polygon described by the
+
+
+
+"""
+    centroid(m::Map) -> Complex128
+
+Returns the complex centroid position of the shape described by the
 mapping `m`.
 
 # Example
@@ -331,12 +496,12 @@ julia> centroid(m)
 -0.20919540229885059 - 0.04022988505747128im
 ```
 """
-centroid(m::ExteriorMap) = m.Zc
+centroid(m::Map) = m.Zc
 
 """
-    Jmoment(m::ExteriorMap) -> Float64
+    Jmoment(m::Map) -> Float64
 
-Returns the second area moment of the polygon described by the
+Returns the second area moment of the shape described by the
 mapping `m`.
 
 # Example
@@ -350,8 +515,9 @@ julia> Jmoment(m)
 1.5768333333333333
 ```
 """
-Jmoment(m::ExteriorMap) = m.J
+Jmoment(m::Map) = m.J
 
+#= solving for Schwarz-Christoffel parameters (prevertices, constant) =#
 
 function param(w::Vector{Complex128},beta::Vector{Float64},
                  zeta0::Vector{Complex128},
