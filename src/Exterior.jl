@@ -1,6 +1,7 @@
 module Exterior
 
 using NLsolve
+
 using ..Properties
 using ..Polygons
 using ..Integration
@@ -77,22 +78,28 @@ function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
   dzdζ = d_powerseries(ζ,ccoeff)
 
 
-  # first entry is d₀
+  # Coefficients of |z(ζ)|²
+  # dcoeff[1] = d₀, dcoeff[2] = d₋₁, etc.
+  # Note that d₁ = conj(d₋₁) = conj(dcoeff[2]), d₂ = conj(d₋₂) = conj(dcoeff[3])
   dcoeff = [dot(ccoeff,ccoeff)]
   for k = 1:ncoeff+1
       push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
   end
 
-  area = -π*sum((-1:ncoeff).*abs.(ccoeff).^2)
+  c = Reflect(ShiftReindex(ccoeff,-2))
+  d = Reflect(OddReindex(dcoeff))
+
+  k = -1:ncoeff
+  l = -1:ncoeff
+  kml = k[:,ones(Int,3)]'-l[:,ones(Int,3)]
+  area = -π*sum(k.*abs.(c(-k)).^2)
 
   if area > 0
-    Zc = -π/area*(-ccoeff[1]*dcoeff[2]+
-              sum((1:ncoeff).*ccoeff[3:ncoeff+2].*conj.(dcoeff[2:ncoeff+1])))
+    Zc = -π/area*sum(k.*c(-k).*d(k))
   else
     Zc = mean(z)
   end
-  # fix this!
-  J = 0.0
+  J = Float64(-0.5π*c(-k)'*d(-kml)*(l.*c(-l)))
 
 
   PowerMap(ccoeff, ncoeff, N, ζ, z, dzdζ, dcoeff, area, Zc, J)
@@ -108,6 +115,36 @@ function Base.show(io::IO, m::PowerMap)
     end
     println(io, "i = 1:$(m.ncoeff)")
 end
+
+
+struct Reflect{T}
+   array :: T
+end
+(vec::Reflect{T})(i) where T = vec.array(-i)
+
+struct ShiftReindex{T,N,O}
+  array :: Vector{T}
+end
+function ShiftReindex(v::Vector{T},o::Int) where T
+  N = length(v)+o
+  ShiftReindex{T,N,o}(v)
+end
+(vec::ShiftReindex{T,N,O})(i::Int) where {T,N,O} =
+                    (i > N || i < 1+O) ? T(0) : vec.array[i-O]
+(vec::ShiftReindex{T,N,O})(ir::AbstractArray{M}) where {T,N,O,M} =
+                    (vec::ShiftReindex{T,N,O}).(collect(ir))
+
+struct OddReindex{T,N}
+   array :: Vector{T}
+end
+function OddReindex(v::Vector{T}) where T
+    N = length(v)-1
+    OddReindex{T,N}(v)
+end
+(vec::OddReindex{T,N})(i::Int) where {T,N} =
+        abs(i) > N ? T(0) : i < 0 ? conj(vec.array[1-i]) : vec.array[1+i]
+(vec::OddReindex{T,N})(ir::AbstractArray{M}) where {T,N,M} =
+                    (vec::OddReindex{T,N}).(collect(ir))
 
 function powerseries(ζ::Complex128,C::Vector{Complex128})
   ζⁿ = ζ
