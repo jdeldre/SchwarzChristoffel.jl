@@ -13,7 +13,7 @@ export PowerMap,ExteriorMap,evaluate,evalderiv,parameters,coefficients,
         moments,area,centroid,Jmoment
 
 
-struct PowerMap <: Map
+struct PowerMap <: ConformalMap
     "power series coefficients, ccoeff[1] -> c₁, ccoeff[2] -> c₀, ccoeff[3] -> c₋₁, etc"
     ccoeff::Vector{Complex128}
 
@@ -49,7 +49,7 @@ end
 circle(N) = [exp(im*2π*(i-1)/N) for i in 1:N]
 
 """
-    PowerMap <: Map
+    PowerMap(c::Vector{Complex12}[;N = 200]) <: ConformalMap
 
 Create a power series map from the exterior of the unit
 circle to the exterior of a shape defined by the power series coefficients.
@@ -176,13 +176,10 @@ evaluate(ζ,m::PowerMap) = powerseries(ζ,m.ccoeff)
 evalderiv(ζ,m::PowerMap) = d_powerseries(ζ,m.ccoeff)
 
 
-#jacobian(m::PowerMap) = m.dzds
-
-
 
 #=   Exterior map from to polygon  =#
 
-struct ExteriorMap <: Map
+struct ExteriorMap <: ConformalMap
 
   "Number of vertices on polygon"
   N :: Int
@@ -235,7 +232,7 @@ struct ExteriorMap <: Map
 end
 
 """
-    ExteriorMap(p::Polygon[;tol::Float64][,ncoeff::Int])
+    ExteriorMap(p::Polygon[;tol::Float64][,ncoeff::Int]) <: ConformalMap
 
 Create a Schwarz-Christoffel map from the interior or exterior of
 the unit circle to the exterior of polygon `p`.
@@ -378,8 +375,10 @@ function Base.show(io::IO, m::ExteriorMap)
 
 end
 
+#= get various data about the map =#
+
 """
-    length(m::Map) -> Integer
+    length(m::ConformalMap) -> Integer
 
 Returns the number of control points/vertices of the map `m`.
 
@@ -394,7 +393,7 @@ julia> length(m)
 4
 ```
 """
-Base.length(m::Map) = m.N
+Base.length(mζ) = m.N
 
 
 """
@@ -423,7 +422,7 @@ julia> prev
 parameters(m::ExteriorMap) = flipdim(m.ζ,1), m.constant
 
 """
-    coefficients(m::Map) -> Tuple{Vector{Complex128},Vector{Complex128}}
+    coefficients(m::ConformalMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
 
 Returns a tuple of vectors of the complex coefficients of the multipole
 expansion of the mapping \$z(\\zeta)\$ described by `m` as well as the
@@ -456,7 +455,7 @@ julia> ccoeff
  -0.000381357-0.00174291im
 ```
 """
-coefficients(m::Map) = m.ccoeff, m.dcoeff
+coefficients(m::ConformalMap) = m.ccoeff, m.dcoeff
 
 """
     moments(m::ExteriorMap) -> Vector{Complex128}
@@ -490,7 +489,7 @@ julia> mom = moments(m)
 moments(m::ExteriorMap) = m.mom
 
 """
-    area(m::Map) -> Float64
+    area(m::ConformalMap) -> Float64
 
 Returns the area of the shape described by the mapping `m`.
 
@@ -515,13 +514,13 @@ julia> area(m)
 ```
 
 """
-area(m::Map) = m.area
+area(m::ConformalMap) = m.area
 
 
 
 
 """
-    centroid(m::Map) -> Complex128
+    centroid(m::ConformalMap) -> Complex128
 
 Returns the complex centroid position of the shape described by the
 mapping `m`.
@@ -537,10 +536,10 @@ julia> centroid(m)
 -0.20919540229885059 - 0.04022988505747128im
 ```
 """
-centroid(m::Map) = m.Zc
+centroid(m::ConformalMap) = m.Zc
 
 """
-    Jmoment(m::Map) -> Float64
+    Jmoment(m::ConformalMap) -> Float64
 
 Returns the second area moment of the shape described by the
 mapping `m`.
@@ -556,7 +555,7 @@ julia> Jmoment(m)
 1.5768333333333333
 ```
 """
-Jmoment(m::Map) = m.J
+Jmoment(m::ConformalMap) = m.J
 
 #= solving for Schwarz-Christoffel parameters (prevertices, constant) =#
 

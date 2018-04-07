@@ -1,7 +1,7 @@
 module Properties
 
-  export Map
+  export ConformalMap
 
-  abstract type Map end
+  abstract type ConformalMap end
 
 end
