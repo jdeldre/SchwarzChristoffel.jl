@@ -757,7 +757,8 @@ evaluate(zeta::Vector{Complex128},m::ExteriorMap) = evaluate(zeta,m,false)
 
 Evaluates `m` at a single point `zeta`.
 """
-evaluate(zeta::Complex128,m...) = getindex(evaluate([zeta],m...),1)
+evaluate(zeta::Complex128,m::ExteriorMap,x...) =
+                      getindex(evaluate([zeta],m,x...),1)
 
 """
     evalderiv(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool) -> Tuple{Vector{Complex128},Vector{Complex128}}
