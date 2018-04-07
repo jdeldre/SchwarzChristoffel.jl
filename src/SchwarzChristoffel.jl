@@ -5,6 +5,8 @@ module SchwarzChristoffel
 using Reexport
 
 include("Properties.jl")
+@reexport using .Properties
+
 include("Integration.jl")
 include("Polygons.jl")
 @reexport using .Polygons

@@ -6,6 +6,9 @@ using ..Properties
 using ..Polygons
 using ..Integration
 
+include("Reindex.jl")
+using .Reindex
+
 export PowerMap,ExteriorMap,evaluate,evalderiv,parameters,coefficients,
         moments,area,centroid,Jmoment
 
@@ -75,7 +78,7 @@ function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
 
   ζ = circle(N)
   z = powerseries(ζ,ccoeff)
-  dzdζ = d_powerseries(ζ,ccoeff)
+  dz, ddz = d_powerseries(ζ,ccoeff)
 
 
   # Coefficients of |z(ζ)|²
@@ -91,7 +94,7 @@ function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
 
   k = -1:ncoeff
   l = -1:ncoeff
-  kml = k[:,ones(Int,3)]'-l[:,ones(Int,3)]
+  kml = k[:,ones(Int,ncoeff+2)]'-l[:,ones(Int,ncoeff+2)]
   area = -π*sum(k.*abs.(c(-k)).^2)
 
   if area > 0
@@ -102,7 +105,7 @@ function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
   J = Float64(-0.5π*c(-k)'*d(-kml)*(l.*c(-l)))
 
 
-  PowerMap(ccoeff, ncoeff, N, ζ, z, dzdζ, dcoeff, area, Zc, J)
+  PowerMap(ccoeff, ncoeff, N, ζ, z, dz, dcoeff, area, Zc, J)
 end
 
 function Base.show(io::IO, m::PowerMap)
@@ -117,34 +120,20 @@ function Base.show(io::IO, m::PowerMap)
 end
 
 
-struct Reflect{T}
-   array :: T
-end
-(vec::Reflect{T})(i) where T = vec.array(-i)
-
-struct ShiftReindex{T,N,O}
-  array :: Vector{T}
-end
-function ShiftReindex(v::Vector{T},o::Int) where T
-  N = length(v)+o
-  ShiftReindex{T,N,o}(v)
-end
-(vec::ShiftReindex{T,N,O})(i::Int) where {T,N,O} =
-                    (i > N || i < 1+O) ? T(0) : vec.array[i-O]
-(vec::ShiftReindex{T,N,O})(ir::AbstractArray{M}) where {T,N,O,M} =
-                    (vec::ShiftReindex{T,N,O}).(collect(ir))
-
-struct OddReindex{T,N}
-   array :: Vector{T}
-end
-function OddReindex(v::Vector{T}) where T
-    N = length(v)-1
-    OddReindex{T,N}(v)
-end
-(vec::OddReindex{T,N})(i::Int) where {T,N} =
-        abs(i) > N ? T(0) : i < 0 ? conj(vec.array[1-i]) : vec.array[1+i]
-(vec::OddReindex{T,N})(ir::AbstractArray{M}) where {T,N,M} =
-                    (vec::OddReindex{T,N}).(collect(ir))
+# struct PowerSeries{T}
+#   C :: Vector{T}
+# end
+# function (f::PowerSeries{T})(ζ::Number) where T
+#   ζⁿ = ζ
+#   z = zero(ζ)
+#   for c in f.C
+#     z += c*ζⁿ
+#     ζⁿ /= ζ
+#   end
+#   return z
+# end
+#
+# (f::PowerSeries{T})(ζ::Vector{Number}) = f.(ζ)
 
 function powerseries(ζ::Complex128,C::Vector{Complex128})
   ζⁿ = ζ
@@ -156,20 +145,35 @@ function powerseries(ζ::Complex128,C::Vector{Complex128})
   z
 end
 
-powerseries(ζs::Vector{Complex128},C::Vector{Complex128}) = [powerseries(ζ,C) for ζ in ζs]
+powerseries(ζs::Vector{Complex128},C::Vector{Complex128}) =
+              [powerseries(ζ,C) for ζ in ζs]
 
 function d_powerseries(ζ::Complex128,C::Vector{Complex128})
-  dzdζ = C[1]
+  dz = C[1]
   ζⁿ = 1/ζ^2
+  ddz = Complex128(0)
   for n in 1:length(C)-2
-    dzdζ -= n*C[n+2]*ζⁿ
+    dz -= n*C[n+2]*ζⁿ
     ζⁿ /= ζ
+    ddz += n*(n+1)*ζⁿ
   end
-  dzdζ
+  return dz, ddz
 end
 
-d_powerseries(ζs::Vector{Complex128},C::Vector{Complex128}) = [d_powerseries(ζ,C) for ζ in ζs]
+function d_powerseries(ζs::Vector{Complex128},C::Vector{Complex128})
 
+  dz = zeros(ζs)
+  ddz = zeros(ζs)
+  for (i,ζ) in enumerate(ζs)
+    dz[i], ddz[i] = d_powerseries(ζ,C)
+  end
+  return dz, ddz
+
+end
+
+evaluate(ζ,m::PowerMap) = powerseries(ζ,m.ccoeff)
+
+evalderiv(ζ,m::PowerMap) = d_powerseries(ζ,m.ccoeff)
 
 
 #jacobian(m::PowerMap) = m.dzds
