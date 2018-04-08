@@ -119,6 +119,9 @@ function Base.show(io::IO, m::PowerMap)
     println(io, "i = 1:$(m.ncoeff)")
 end
 
+(m::PowerMap)(ζ) = powerseries(ζ,m.ccoeff)
+
+evalderiv(ζ,m::PowerMap) = d_powerseries(ζ,m.ccoeff)
 
 # struct PowerSeries{T}
 #   C :: Vector{T}
@@ -171,9 +174,6 @@ function d_powerseries(ζs::Vector{Complex128},C::Vector{Complex128})
 
 end
 
-evaluate(ζ,m::PowerMap) = powerseries(ζ,m.ccoeff)
-
-evalderiv(ζ,m::PowerMap) = d_powerseries(ζ,m.ccoeff)
 
 
 
@@ -374,6 +374,58 @@ function Base.show(io::IO, m::ExteriorMap)
     println(io)
 
 end
+
+"""
+    m::ExteriorMap(ζ::T[;inside::Bool=false]) -> T
+
+Evaluates the mapping `m` at the vector of points `ζ`, which are
+assumed to lie inside the unit circle if `inside` is `true`, or
+are assumed outside the unit circle if `inside` is `false` (the default).
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> m = ExteriorMap(p);
+
+julia> ζ = [0.1,0.5-0.75im,-0.25-0.3im];
+
+julia> m(ζ;inside=true)
+3-element Array{Complex{Float64},1}:
+   -6.9344-7.68965im
+ 0.0439774-1.11249im
+   2.41181-0.044779im
+
+julia> ζ = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
+
+julia> m(ζ)
+   3-element Array{Complex{Float64},1}:
+      0.81614+3.02956im
+     -2.25237-2.08523im
+    -0.333104+0.975837im
+```
+"""
+function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
+  if inside
+    return evaluate(ζ,flipdim(m.z,1),1.-flipdim(m.angle,1),
+            m.ζ,m.constant,m.qdata)
+  else
+    b = -m.constant/abs(m.constant)
+    ζ[ζ.==0] = eps();
+    ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
+
+    σ = b./ζ
+    return evaluate(σ,flipdim(m.z,1),1.-flipdim(m.angle,1),
+            m.ζ,m.constant,m.qdata)
+  end
+
+end
+
+(m::ExteriorMap)(ζ::Complex128;inside::Bool=false) =
+            getindex(m([ζ];inside=inside),1)
+
+
 
 #= get various data about the map =#
 
@@ -689,76 +741,6 @@ function evalderiv(zeta::Vector{Complex128},beta::Vector{Float64},
 
 end
 
-"""
-    evaluate(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool) -> Vector{Complex128}
-
-Evaluates the mapping `m` at the vector of points `zeta`, which are
-assumed to lie inside the unit circle if `inside` is `true`, or
-are assumed outside the unit circle if `inside` is `false`.
-
-# Example
-
-```jldoctest
-julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
-
-julia> m = ExteriorMap(p);
-
-julia> zeta = [0.1,0.5-0.75im,-0.25-0.3im];
-
-julia> evaluate(zeta,m,true)
-3-element Array{Complex{Float64},1}:
-   -6.9344-7.68965im
- 0.0439774-1.11249im
-   2.41181-0.044779im
-```
-"""
-function evaluate(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool)
-
-  if inside
-    return evaluate(zeta,flipdim(m.z,1),1.-flipdim(m.angle,1),
-            m.ζ,m.constant,m.qdata)
-  else
-    b = -m.constant/abs(m.constant)
-    zeta[zeta.==0] = eps();
-    zeta[abs.(zeta).<1] = zeta[abs.(zeta).<1]./abs.(zeta[abs.(zeta).<1])
-
-    sigma = b./zeta
-    return evaluate(sigma,flipdim(m.z,1),1.-flipdim(m.angle,1),
-            m.ζ,m.constant,m.qdata)
-  end
-end
-
-"""
-    evaluate(zeta::Vector{Complex128},m::ExteriorMap) -> Vector{Complex128}
-
-Evaluates the mapping `m` at the vector of points `zeta`, which are
-assumed to lie outside the unit circle.
-
-# Example
-
-```jldoctest
-julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
-
-julia> m = ExteriorMap(p);
-
-julia> zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
-
-julia> evaluate(zeta,m)
-3-element Array{Complex{Float64},1}:
-   0.81614+3.02956im
-  -2.25237-2.08523im
- -0.333104+0.975837im
-```
-"""
-evaluate(zeta::Vector{Complex128},m::ExteriorMap) = evaluate(zeta,m,false)
-
-"""
-    evaluate(zeta::Complex128,m...) -> Complex128
-
-Evaluates `m` at a single point `zeta`.
-"""
-evaluate(zeta::Complex128,m::ExteriorMap,x...) =
-                      getindex(evaluate([zeta],m,x...),1)
 
 """
     evalderiv(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool) -> Tuple{Vector{Complex128},Vector{Complex128}}
