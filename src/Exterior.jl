@@ -12,7 +12,6 @@ using .Reindex
 export PowerMap,ExteriorMap,parameters,coefficients,
         moments,area,centroid,Jmoment
 
-
 struct PowerMap <: ConformalMap
     "power series coefficients, ccoeff[1] -> c₁, ccoeff[2] -> c₀, ccoeff[3] -> c₋₁, etc"
     ccoeff::Vector{Complex128}
@@ -142,7 +141,9 @@ julia> m(ζ)
 """
 (m::PowerMap)(ζ) = powerseries(ζ,m.ccoeff)
 
-evalderiv(ζ,m::PowerMap) = d_powerseries(ζ,m.ccoeff)
+(dm::DerivativeMap{PowerMap})(ζ) = d_powerseries(ζ,dm.m.ccoeff)
+
+#evalderiv(ζ,m::PowerMap) = d_powerseries(ζ,m.ccoeff)
 
 # struct PowerSeries{T}
 #   C :: Vector{T}
@@ -788,24 +789,24 @@ julia> dz
   3.99129-5.30641im
 ```
 """
-function evalderiv(zeta::Vector{Complex128},m::ExteriorMap,inside::Bool)
-
+function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=false)
   if inside
-    return evalderiv(zeta,1.-flipdim(m.angle,1),m.ζ,m.constant)
+    return evalderiv_exterior(ζ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
   else
-    b = -m.constant/abs(m.constant)
-    zeta[zeta.==0] = eps();
-    zeta[abs.(zeta).<1] = zeta[abs.(zeta).<1]./abs.(zeta[abs.(zeta).<1])
+    b = -dm.m.constant/abs(dm.m.constant)
+    ζ[ζ.==0] = eps();
+    ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 
-    sigma = b./zeta
-    dsigma = -sigma./zeta
-    ddsigma = -2.0*dsigma./zeta
-    dz, ddz = evalderiv(sigma,1.-flipdim(m.angle,1),m.ζ,m.constant)
-    ddz = ddz.*dsigma.^2 + dz.*ddsigma
-    dz .*= dsigma
+    σ = b./ζ
+    dσ = -σ./ζ
+    ddσ = -2.0*dσ./ζ
+    dz, ddz = evalderiv_exterior(σ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
+    ddz = ddz.*dσ.^2 + dz.*ddσ
+    dz .*= dσ
     return dz, ddz
   end
 end
+
 
 """
     evalderiv(zeta::Vector{Complex128},m::ExteriorMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
@@ -833,15 +834,8 @@ julia> dz
  1.30078-0.266625im
 ```
 """
-evalderiv(zeta::Vector{Complex128},m::ExteriorMap) = evalderiv(zeta,m,false)
-
-"""
-    evalderiv(zeta::Complex128,m...) -> Tuple{Complex128,Complex128}
-
-Evaluates the derivatives of `m` at a single point `zeta`.
-"""
-function evalderiv(zeta::Complex128,m::ExteriorMap,x...)
-  dz, ddz = evalderiv([zeta],m::ExteriorMap,x...)
+function (dm::DerivativeMap{ExteriorMap})(ζ::Complex128;inside::Bool=false)
+  dz, ddz = dm([ζ];inside=inside)
   return dz[1],ddz[1]
 end
 

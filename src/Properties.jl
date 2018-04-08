@@ -1,7 +1,11 @@
 module Properties
 
-  export ConformalMap
+  export ConformalMap, DerivativeMap
 
   abstract type ConformalMap end
+
+  struct DerivativeMap{M<:ConformalMap}
+    m :: M
+  end
 
 end
