@@ -75,4 +75,21 @@ end
   @test isapprox(centroid(m),Complex128(0);atol=eps())
   @test Jmoment(m) ≈ 1.475920229
 
+  a = 1
+  b = 0.1
+  c = Complex128[0.5(a+b),0,0.5(a-b)]
+  m = SchwarzChristoffel.PowerMap(c)
+  zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im]
+  @test SchwarzChristoffel.evaluate(zeta,m) ≈
+      Complex128[0.595+1.515im,-1.2125-0.9875im,
+                 0.195909090909im]
+  dz, ddz = SchwarzChristoffel.evalderiv(zeta,m)
+  @test dz ≈ Complex128[0.586 + 0.027im,
+                        0.55 + 0.05625im,
+                        0.921900826]
+  zeta = 1.0+3.0im
+  @test SchwarzChristoffel.evaluate(zeta,m) ≈ 0.595+1.515im
+  dz, ddz = SchwarzChristoffel.evalderiv(zeta,m)
+  @test dz ≈ 0.586 + 0.027im
+
 end

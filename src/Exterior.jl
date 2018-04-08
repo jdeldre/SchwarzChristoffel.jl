@@ -839,9 +839,10 @@ evalderiv(zeta::Vector{Complex128},m::ExteriorMap) = evalderiv(zeta,m,false)
 
 Evaluates the derivatives of `m` at a single point `zeta`.
 """
-evalderiv(zeta::Complex128,m...) =
-      getindex(getindex(evalderiv([zeta],m...),1),1),
-          getindex(getindex(evalderiv([zeta],m...),2),1)
+function evalderiv(zeta::Complex128,m::ExteriorMap,x...)
+  dz, ddz = evalderiv([zeta],m::ExteriorMap,x...)
+  return dz[1],ddz[1]
+end
 
 
 
