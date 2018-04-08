@@ -18,8 +18,6 @@ Exterior.moments
 Exterior.area
 Exterior.centroid
 Exterior.Jmoment
-Exterior.evaluate
-Exterior.evalderiv
 ```
 
 ## Index

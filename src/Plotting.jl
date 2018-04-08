@@ -101,7 +101,7 @@ function conformal_grid(m::SchwarzChristoffel.ConformalMap)
   rg = linspace(1,rmax,nrg)
   for jθ in 1:nθ
       ζg = collect(rg*exp(im*θg))
-      zg = SchwarzChristoffel.evaluate(ζg,m)
+      zg = m(ζg)
 
        ax1[:plot](real(ζg),imag(ζg),linewidth=ps.linewidth,color=ps.xicolor)
        ax2[:plot](real(zg),imag(zg),linewidth=ps.linewidth,color=ps.xicolor)
@@ -117,7 +117,7 @@ function conformal_grid(m::SchwarzChristoffel.ConformalMap)
    θg = linspace(0,2π,nθg)
    for jr in 1:nr
        ζg = collect(rg*exp.(im*θg));
-       zg = SchwarzChristoffel.evaluate(ζg,m)
+       zg = m(ζg)
 
        ax1[:plot](real(ζg),imag(ζg),linewidth=ps.linewidth,color=ps.etacolor)
        ax2[:plot](real(zg),imag(zg),linewidth=ps.linewidth,color=ps.etacolor)

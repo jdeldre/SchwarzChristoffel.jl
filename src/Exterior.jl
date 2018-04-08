@@ -9,7 +9,7 @@ using ..Integration
 include("Reindex.jl")
 using .Reindex
 
-export PowerMap,ExteriorMap,evaluate,evalderiv,parameters,coefficients,
+export PowerMap,ExteriorMap,parameters,coefficients,
         moments,area,centroid,Jmoment
 
 
@@ -119,6 +119,27 @@ function Base.show(io::IO, m::PowerMap)
     println(io, "i = 1:$(m.ncoeff)")
 end
 
+"""
+    m::PowerMap(ζ::T) -> T
+
+Evaluates the power-series mapping `m` at the points `ζ`.
+
+# Example
+
+```jldoctest
+julia> c = Complex128[1,0,1/4];
+
+julia> m = PowerMap(c);
+
+julia> ζ = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
+
+julia> m(ζ)
+3-element Array{Complex{Float64},1}:
+   0.595+1.515im
+ -1.2125-0.9875im
+     0.0+0.195909im
+```
+"""
 (m::PowerMap)(ζ) = powerseries(ζ,m.ccoeff)
 
 evalderiv(ζ,m::PowerMap) = d_powerseries(ζ,m.ccoeff)
@@ -322,7 +343,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
   # fix a
   zetainf = 5.0*exp.(im*collect(0:π/2:3π/2))
   sigmainf = -c/abs(c)./zetainf
-  zinf = evaluate(sigmainf,w,beta,zeta,c,qdat)
+  zinf = evaluate_exterior(sigmainf,w,beta,zeta,c,qdat)
   ccoeff[2] = mean([zinf[i]-sum(ccoeff.*zetainf[i].^(1:-1:-ncoeff))
                   for i = 1:length(zetainf)])
 
@@ -408,7 +429,7 @@ julia> m(ζ)
 """
 function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
   if inside
-    return evaluate(ζ,flipdim(m.z,1),1.-flipdim(m.angle,1),
+    return evaluate_exterior(ζ,flipdim(m.z,1),1.-flipdim(m.angle,1),
             m.ζ,m.constant,m.qdata)
   else
     b = -m.constant/abs(m.constant)
@@ -416,7 +437,7 @@ function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 
     σ = b./ζ
-    return evaluate(σ,flipdim(m.z,1),1.-flipdim(m.angle,1),
+    return evaluate_exterior(σ,flipdim(m.z,1),1.-flipdim(m.angle,1),
             m.ζ,m.constant,m.qdata)
   end
 
@@ -445,7 +466,7 @@ julia> length(m)
 4
 ```
 """
-Base.length(mζ) = m.N
+Base.length(m::ConformalMap) = m.N
 
 
 """
@@ -559,7 +580,7 @@ julia> area(m)
 ```jldoctest
 julia> c = Complex128[1];
 
-julia> m = PowerMap(p);
+julia> m = PowerMap(c);
 
 julia> area(m)
 3.141592653589793
@@ -567,8 +588,6 @@ julia> area(m)
 
 """
 area(m::ConformalMap) = m.area
-
-
 
 
 """
@@ -653,7 +672,7 @@ function param(w::Vector{Complex128},beta::Vector{Float64},
 
 end
 
-function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
+function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
                   beta::Vector{Float64},prev::Vector{Complex128},
                   c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
@@ -727,7 +746,7 @@ function evaluate(zeta::Vector{Complex128},w::Vector{Complex128},
 
 end
 
-function evalderiv(zeta::Vector{Complex128},beta::Vector{Float64},
+function evalderiv_exterior(zeta::Vector{Complex128},beta::Vector{Float64},
                   prev::Vector{Complex128},c::Complex128)
 
     n = length(prev)
