@@ -8,16 +8,9 @@ end
 ```
 ## Methods
 
-```@docs
-Exterior.PowerMap
-Exterior.ExteriorMap
-Exterior.length
-Exterior.parameters
-Exterior.coefficients
-Exterior.moments
-Exterior.area
-Exterior.centroid
-Exterior.Jmoment
+```@autodocs
+Modules = [Exterior]
+Order   = [:type, :function]
 ```
 
 ## Index

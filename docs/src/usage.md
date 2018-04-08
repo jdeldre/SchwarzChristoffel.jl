@@ -44,21 +44,22 @@ savefig("polygongrid.svg",format="svg"); nothing # hide
 We can now easily evaluate the map at any place we like. It could be evaluated
 outside the unit circle:
 ```@repl mapconstruct
-zeta = 1.2 + 0.1im
-evaluate(zeta,m)
+ζ = 1.2 + 0.1im
+m(ζ)
 ```
 
 or it could be evaluated inside the unit circle:
 ```@repl mapconstruct
-zeta = 0.5 + 0.1im
-evaluate(zeta,m,true)
+ζ = 0.5 + 0.1im
+m(ζ;inside=true)
 ```
 
 We can also evaluate the first and second derivative of the map at any place(s).
 Let's evaluate at a range of points outside the circle.
 ```@repl mapconstruct
-zeta = collect(1.1:0.1:2.0) + 0.1im
-dz,ddz = evalderiv(zeta,m);
+dm = DerivativeMap(m)
+ζ = collect(1.1:0.1:2.0) + 0.1im
+dz,ddz = dm(ζ);
 dz
 ```
 ```@setup mapconstruct2
