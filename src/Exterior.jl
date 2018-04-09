@@ -10,7 +10,7 @@ include("Reindex.jl")
 using .Reindex
 
 export PowerMap,ExteriorMap,summary,parameters,coefficients,
-        moments,area,centroid,Jmoment
+        moments,area,centroid,Jmoment,addedmass
 
 struct PowerMap <: ConformalMap
     "power series coefficients, ccoeff[1] -> c₁, ccoeff[2] -> c₀, ccoeff[3] -> c₋₁, etc"
@@ -42,6 +42,9 @@ struct PowerMap <: ConformalMap
 
     "2nd area moment of the mapped shape"
     J         :: Float64
+
+    "Added mass tensor"
+    Ma        :: Array{Float64,2}
 
 end
 
@@ -107,23 +110,12 @@ function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
       push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
   end
 
-  c = Reflect(ShiftReindex(ccoeff,-2))
-  d = Reflect(OddReindex(dcoeff))
+  area, Zc, J = shape_moments(ccoeff,dcoeff)
 
-  k = -1:ncoeff
-  l = -1:ncoeff
-  kml = k[:,ones(Int,ncoeff+2)]'-l[:,ones(Int,ncoeff+2)]
-  area = -π*sum(k.*abs.(c(-k)).^2)
-
-  if area > 0
-    Zc = -π/area*sum(k.*c(-k).*d(k))
-  else
-    Zc = mean(z)
-  end
-  J = Float64(-0.5π*c(-k)'*d(-kml)*(l.*c(-l)))
+  Ma = addedmass(ccoeff,dcoeff,area)
 
 
-  PowerMap(ccoeff, ncoeff, N, ζ, z, dz, dcoeff, area, Zc, J)
+  PowerMap(ccoeff, ncoeff, N, ζ, z, dz, dcoeff, area, Zc, J, Ma)
 end
 
 function Base.show(io::IO, m::PowerMap)
@@ -145,21 +137,6 @@ end
 
 (dm::DerivativeMap{PowerMap})(ζ) = d_powerseries(ζ,dm.m.ccoeff)
 
-
-# struct PowerSeries{T}
-#   C :: Vector{T}
-# end
-# function (f::PowerSeries{T})(ζ::Number) where T
-#   ζⁿ = ζ
-#   z = zero(ζ)
-#   for c in f.C
-#     z += c*ζⁿ
-#     ζⁿ /= ζ
-#   end
-#   return z
-# end
-#
-# (f::PowerSeries{T})(ζ::Vector{Number}) = f.(ζ)
 
 function powerseries(ζ::Complex128,C::Vector{Complex128})
   ζⁿ = ζ
@@ -197,6 +174,28 @@ function d_powerseries(ζs::Vector{Complex128},C::Vector{Complex128})
 
 end
 
+function shape_moments(ccoeff::Vector{Complex128},
+                       dcoeff::Vector{Complex128})
+
+  ncoeff = length(ccoeff)-2
+  k = -1:ncoeff
+  l = -1:ncoeff
+  kml = k[:,ones(Int,length(ccoeff))]'-l[:,ones(Int,length(ccoeff))]
+
+  c = Reflect(ShiftReindex(ccoeff,-2))
+  d = Reflect(OddReindex(dcoeff))
+
+  area = -π*sum(k.*abs.(c(-k)).^2)
+
+  if area > 0
+    Zc = -π/area*sum(k.*c(-k).*d(k))
+  else
+    Zc = Complex128(0)
+  end
+  J = Float64(-0.5π*c(-k)'*d(-kml)*(l.*c(-l)))
+
+  return area, Zc, J
+end
 
 
 #=   Exterior map from to polygon  =#
@@ -250,6 +249,9 @@ struct ExteriorMap <: ConformalMap
 
   "2nd area moment of the mapped polygon"
   J         :: Float64
+
+  "Added mass tensor"
+  Ma        :: Array{Float64,2}
 
 end
 
@@ -342,18 +344,6 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
   preprev = -c/abs(c)./flipdim(zeta,1)
   prevangle = angle.(preprev)
 
-  # compute geometric stuff
-  z = vertex(p)
-  zmid = 0.5*(z+circshift(z,-1))
-  dz = circshift(z,-1)-z
-  area = 0.5*imag(sum(conj.(zmid).*dz))
-  if area > 0
-    Zc = -0.5im/area*sum(dz.*(abs.(zmid).^2+abs.(dz).^2/12))
-  else
-    Zc = mean(z)
-  end
-  J = 0.25*imag(sum(conj.(zmid).*dz.*(abs.(zmid).^2+abs.(dz).^2/12)))
-
   # first two entries are for c₁ and c₀.
   betaflip = flipdim(beta,1)
   ccoeff = Complex128[abs(c),0.0]
@@ -377,8 +367,28 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
     push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
   end
 
+  area, Zc, J = shape_moments(vertex(p))
+
+  Ma = addedmass(ccoeff,dcoeff,area)
+
+
   ExteriorMap(n,p.vert,p.angle,qdat,tol,zeta,c,preprev,prevangle,
-              ncoeff,ccoeff,dcoeff,mom,area,Zc,J)
+              ncoeff,ccoeff,dcoeff,mom,area,Zc,J,Ma)
+end
+
+function shape_moments(z::Vector{Complex128})
+
+  zmid = 0.5*(z+circshift(z,-1))
+  dz = circshift(z,-1)-z
+  area = 0.5*imag(sum(conj.(zmid).*dz))
+  if area > 0
+    Zc = -0.5im/area*sum(dz.*(abs.(zmid).^2+abs.(dz).^2/12))
+  else
+    Zc = mean(z)
+  end
+  J = 0.25*imag(sum(conj.(zmid).*dz.*(abs.(zmid).^2+abs.(dz).^2/12)))
+
+  return area, Zc, J
 end
 
 function Base.show(io::IO, m::ExteriorMap)
@@ -440,9 +450,71 @@ function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
 
 end
 
-(m::ExteriorMap)(ζ::Complex128;inside::Bool=false) =
-            getindex(m([ζ];inside=inside),1)
+(m::ExteriorMap)(ζ::Complex128;inside::Bool=false) = getindex(m([ζ];inside=inside),1)
 
+
+
+
+"""
+    DerivativeMap(m::ConformalMap)
+
+Constructs new conformal maps from the first and second derivatives of the
+conformal map `m`.
+
+These new conformal maps can be evaluated at a single or vector of points just as
+ `m` is. The first entry in the tuple returned is the first derivative,
+the second entry is the second derivative.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> m = ExteriorMap(p);
+
+julia> dm = DerivativeMap(m);
+
+julia> ζ = [0.1,0.5-0.75im,-0.25-0.3im];
+
+julia> dz, ddz = dm(ζ;inside=true);
+
+julia> dz
+3-element Array{Complex{Float64},1}:
+  67.2068+76.6284im
+ -1.11666+0.544576im
+  3.99129-5.30641im
+
+julia> ζ = 1.0+3.0im;
+
+julia> dz, ddz = dm(ζ);
+
+julia> dz
+1.0305280030434558 + 0.0044499240190600114im
+```
+"""function DerivativeMap() end
+
+function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=false)
+  if inside
+    return evalderiv_exterior(ζ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
+  else
+    b = -dm.m.constant/abs(dm.m.constant)
+    ζ[ζ.==0] = eps();
+    ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
+
+    σ = b./ζ
+    dσ = -σ./ζ
+    ddσ = -2.0*dσ./ζ
+    dz, ddz = evalderiv_exterior(σ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
+    ddz = ddz.*dσ.^2 + dz.*ddσ
+    dz .*= dσ
+    return dz, ddz
+  end
+end
+
+function (dm::DerivativeMap{ExteriorMap})(ζ::Complex128;inside::Bool=false)
+  dz, ddz = dm([ζ];inside=inside)
+  return dz[1],ddz[1]
+end
 
 
 #= get various data about the map =#
@@ -649,6 +721,46 @@ julia> Jmoment(m)
 """
 Jmoment(m::ConformalMap) = m.J
 
+"""
+    addedmass(m::ConformalMap) -> Array{Float64,2}
+
+Returns the added mass matrix of the shape described by the
+conformal mapping `m`.
+
+# Example
+
+```jldoctest
+julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
+
+julia> m = ExteriorMap(p);
+
+julia> addedmass(m)
+3×3 Array{Float64,2}:
+  0.723706    0.0944715  -1.3739
+  0.0944715   3.67642    -0.255121
+ -1.3739     -0.255121    3.59239
+```
+"""
+addedmass(m::ConformalMap) = m.Ma
+
+function addedmass(ccoeff::Vector{Complex128},
+                   dcoeff::Vector{Complex128},
+                   area::Float64)
+  M = zeros(3,3)
+  c = Reflect(ShiftReindex(ccoeff,-2))
+  d = Reflect(OddReindex(dcoeff))
+
+  k = 1:length(dcoeff)+1
+  M[1,1] = 0.5sum(k.*abs.(d(-k)).^2)
+  M[1,2] = M[2,1] = -imag(c(1)*d(-1))
+  M[1,3] = M[3,1] =  real(c(1)*d(-1))
+  M[2,3] = M[3,2] = -imag(c(1)*c(-1))
+  M[2,2] = abs(c(1))^2-real(c(1)*c(-1))-area/(2π)
+  M[3,3] = abs(c(1))^2+real(c(1)*c(-1))-area/(2π)
+  return 2π*M
+
+end
+
 #= solving for Schwarz-Christoffel parameters (prevertices, constant) =#
 
 function param(w::Vector{Complex128},beta::Vector{Float64},
@@ -782,66 +894,6 @@ function evalderiv_exterior(zeta::Vector{Complex128},beta::Vector{Float64},
 end
 
 
-"""
-    DerivativeMap(m::ConformalMap)
-
-Constructs new conformal maps from the first and second derivatives of the
-conformal map `m`.
-
-These new conformal maps can be evaluated at a single or vector of points just as
- `m` is. The first entry in the tuple returned is the first derivative,
-the second entry is the second derivative.
-
-# Example
-
-```jldoctest
-julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
-
-julia> m = ExteriorMap(p);
-
-julia> dm = DerivativeMap(m);
-
-julia> ζ = [0.1,0.5-0.75im,-0.25-0.3im];
-
-julia> dz, ddz = dm(ζ;inside=true);
-
-julia> dz
-3-element Array{Complex{Float64},1}:
-  67.2068+76.6284im
- -1.11666+0.544576im
-  3.99129-5.30641im
-
-julia> ζ = 1.0+3.0im;
-
-julia> dz, ddz = dm(ζ);
-
-julia> dz
-1.0305280030434558 + 0.0044499240190600114im
-```
-"""function DerivativeMap() end
-
-function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=false)
-  if inside
-    return evalderiv_exterior(ζ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
-  else
-    b = -dm.m.constant/abs(dm.m.constant)
-    ζ[ζ.==0] = eps();
-    ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
-
-    σ = b./ζ
-    dσ = -σ./ζ
-    ddσ = -2.0*dσ./ζ
-    dz, ddz = evalderiv_exterior(σ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
-    ddz = ddz.*dσ.^2 + dz.*ddσ
-    dz .*= dσ
-    return dz, ddz
-  end
-end
-
-function (dm::DerivativeMap{ExteriorMap})(ζ::Complex128;inside::Bool=false)
-  dz, ddz = dm([ζ];inside=inside)
-  return dz[1],ddz[1]
-end
 
 ####
 
