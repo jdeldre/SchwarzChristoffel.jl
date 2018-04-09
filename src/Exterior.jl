@@ -4,7 +4,9 @@ using NLsolve
 
 using ..Properties
 using ..Polygons
-using ..Integration
+
+include("Integration.jl")
+using .Integration
 
 include("Reindex.jl")
 using .Reindex
