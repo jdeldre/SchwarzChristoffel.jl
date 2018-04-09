@@ -60,27 +60,28 @@ function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
   dequad = DQuad(beta,qdat)
 
   # initialize the mapped evaluation points
-  wp = zeros(Complex128,neval)
+  z = zeros(Complex128,neval)
 
   # find the closest prevertices to each evaluation point and their
   #  corresponding distances
-  dz = abs.(hcat([zeta for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
+  dz = abs.(zeta[:,ones(Int,n)]-prev[:,ones(Int,neval)].')
+  #dz = abs.(hcat([zeta for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
   (dist,ind) = findmin(dz,2)
   sing = floor.(Int,(ind[:]-1)/neval)+1
 
   # find any prevertices in the evaluation list and set them equal to
   #  the corresponding vertices. The origin is also a singular point
   vertex = (dist[:] .< tol)
-  wp[vertex] = w[sing[vertex]]
+  z[vertex] = w[sing[vertex]]
   zerop = abs.(zeta) .< tol
-  wp[zerop] = Inf
+  z[zerop] = Inf
   vertex = vertex .| zerop
 
   # the starting (closest) singularities for each evaluation point
   prevs = prev[sing]
 
   # set the initial values of the non-vertices
-  wp[.!vertex] = w[sing[.!vertex]]
+  z[.!vertex] = w[sing[.!vertex]]
 
   # distance to singularity at the origin
   abszeta = abs.(zeta)
@@ -100,7 +101,7 @@ function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
     zetanew[unf] = zetaold[unf] + dist[unf].*(zeta[unf]-zetaold[unf])
 
     # integrate
-    wp[unf] = wp[unf] + c*dequad(zetaold[unf],zetanew[unf],sing[unf],prev)
+    z[unf] = z[unf] + c*dequad(zetaold[unf],zetanew[unf],sing[unf],prev)
 
     # set new starting integration points for those that can be integrated
     #  further
@@ -112,7 +113,7 @@ function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
 
   end
 
-  return wp
+  return z
 
 end
 
@@ -130,7 +131,204 @@ function evalderiv_exterior(zeta::Vector{Complex128},beta::Vector{Float64},
 
 end
 
+function evalinv_exterior(z::Vector{Complex128},w::Vector{Complex128},
+                  beta::Vector{Float64},prev::Vector{Complex128},
+                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
+   n = length(w)
+   zeta = zeros(Complex128,size(z))
+   lenz = length(z)
+
+   # Find z values close to vertices and set zeta to the corresponding
+   # prevertices
+   done = zeros(Bool,size(z))
+   for j = 1:n
+     idx = find(abs.(z-w[j]) .< 3*eps())
+     zeta[idx] = prev[j]
+     done[idx] = true
+   end
+   lenz -= sum(done)
+   if lenz==0
+     return zeta
+   end
+
+   # Now, for remaining z values, first try to integrate
+   #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
+   # with the initial condition ζ(0) = ζ₀.
+
+
+   return zeta
+
+
+#
+# % ODE
+# if ode
+#   if isempty(zeta0)
+#     % Pick a value z0 (not a singularity) and compute the map there.
+#     [z0,w0] = scimapz0('de',z(~done),w,beta,prev,c,qdat);
+#   else
+#     w0 = demap(zeta0,w,beta,prev,c,qdat);
+#     if length(zeta0)==1 & lenz > 1
+#       zeta = zeta0(:,ones(lenz,1)).';
+#       w0 = w0(:,ones(lenz,1)).';
+#     end
+#     w0 = w0(~done);
+#     zeta0 = zeta0(~done);
+#   end
+#
+#   % Use relaxed ODE tol if improving with Newton.
+#   odetol = max(tol,1e-3*(newton));
+#
+#   % Rescale dependent coordinate
+#   scale = (z(~done) - w0(:));
+#
+#   % Solve ODE
+#   zeta0 = [real(zeta0);imag(zeta0)];
+#   [t,y] = ode23('deimapfun',[0,0.5,1],zeta0,odeset('abstol',odetol),...
+#       scale,prev,beta,c);
+#   [m,leny] = size(y);
+#   zeta(~done) = y(m,1:lenz)+sqrt(-1)*y(m,lenz+1:leny);
+#   out = abs(zeta) > 1;
+#   zeta(out) = sign(zeta(out));
+# end
+#
+# % Newton iterations
+# if newton
+#   if ~ode
+#     zetan = zeta0(:);
+#     if length(zeta0)==1 & lenz > 1
+#       zetan = zetan(:,ones(lenz,1));
+#     end
+#     zetan(done) = zeta(done);
+#   else
+#     zetan = zetap(:);
+#   end
+#
+#   z = z(:);
+#   k = 0;
+#   while ~all(done) & k < maxiter
+#     F = z(~done) - demap(zetan(~done),w,beta,prev,c,qdat);
+#     m = length(F);
+#     dF = c*(zetan(~done).').^(-2) .* exp(sum(beta(:,ones(m,1)) .* ...
+#       log(1-(zetan(~done,ones(n,1)).')./prev(:,ones(m,1)))));
+#     zetan(~done) = zetan(~done) + F(:)./dF(:);
+#     done(~done) = (abs(F)< tol);
+#     k = k+1;
+#   end
+#   if any(abs(F)> tol)
+#     str = sprintf('Check solution; maximum residual = %.3g\n',max(abs(F)));
+#     warning(str)
+#   end
+#   zeta(:) = zetan;
+# end
+
+end
+
+function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
+                  beta::Vector{Float64},prev::Vector{Complex128},
+                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+
+  n = length(w)
+  tol = 1000.0*10.0^(-size(qdat[1])[1])
+  shape = copy(z)
+  zeta0 = copy(z)
+  z0 = copy(z)
+  argz = angle.(prev);
+  argz[argz.<=0] .+= 2π
+
+  argw = cumsum([angle(w[2]-w[1]); -π*beta[2:n]])
+
+  infty = isinf.(w)
+  fwd = circshift(1:n,-1)
+  anchor = zeros(w)
+  anchor[.~infty] = w[.~infty]
+  anchor[infty] = w[fwd[infty]]
+  direcn = exp.(im*argw)
+  direcn[infty] = -direcn[infty]
+  len = abs.(w[fwd] - w)
+
+  factor = 0.5
+  done = zeros(Bool,length(z))
+  M = length(z)
+  iter = Int(0)
+
+  zetabase = NaN*ones(Complex128,n)
+  zbase = NaN*ones(Complex128,n)
+  idx = []
+  while M > 0
+    for j = 1:n
+      if j<n
+        zetabase[j] = exp(im*(factor*argz[j] + (1-factor)*argz[j+1]))
+      else
+        zetabase[j] = exp(im*(factor*argz[n] + (1-factor)*(2π+argz[1])))
+      end
+    end
+    zbase = evaluate_exterior(zetabase,w,beta,prev,c,qdat)
+    proj = real.( (zbase-anchor) .* conj.(direcn) )
+    zbase = anchor + proj.*direcn
+    if isempty(idx)
+      dist,idxtemp = findmin(abs.( z[.~done,ones(Int,n)].' - zbase[:,ones(Int,M)] ),1)
+      for k = 1:M
+          push!(idx,idxtemp[k]-(k-1)*n)
+      end
+    else
+      idx[.~done] = idx[.~done].%n + 1
+    end
+    zeta0[.~done] = zetabase[idx[.~done]]
+    z0[.~done] = zbase[idx[.~done]]
+
+    for j = 1:n
+      active = (idx.==j) .& (.~done)
+      if any(active)
+
+        done[active] = ones(Bool,sum(active))
+        for k in [1:j-1;j+1:n]'
+          A = [real(direcn[k]);imag(direcn[k])]
+          for p in find(active)
+            dif = z0[p]-z[p]
+              A = hcat(A,[real(dif);imag(dif)])
+              if cond(A) < eps()
+                zx = real( (z[p]-anchor[k]) / direcn[k] )
+                z0x = real( (z0[p]-anchor[k]) / direcn[k] )
+                if (zx*z0x < 0) || ((zx-len[k])*(z0x-len[k]) < 0)
+                  done[p] = false
+                end
+              else
+                dif = z0[p]-anchor[k]
+                  s = A\[real(dif);imag(dif)]
+                  if s[1]>=0 && s[1]<=len[k]
+                    if abs(s[2]-1) < tol
+                      zeta0[p] = zetabase[k]
+                      z0[p] = zbase[k]
+                    elseif abs(s[2]) < tol
+                      if real( conj(z[p]-z0[p])*im*direcn[k] ) > 0
+                        done[p] = false
+                      end
+                    elseif s[2] > 0 && s[2] < 1
+                      done[p] = false
+                    end
+                  end
+                end # cond(A)
+              end # for p
+            end # for k
+            M = sum(.~done)
+            if M == 0
+              break
+            end
+          end # if any active
+          if iter > 2*n
+            error("Can''t seem to choose starting points.  Supply them manually.")
+          else
+            iter += 1
+          end
+          factor = rand(1)
+        end # for j
+
+  end  # while M
+
+  return zeta0, z0
+
+end
 
 ####
 
