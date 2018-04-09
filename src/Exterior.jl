@@ -9,15 +9,76 @@ using ..Integration
 include("Reindex.jl")
 using .Reindex
 
-export PowerMap,ExteriorMap,summary,parameters,coefficients,
+export PowerSeries,PowerSeriesDerivatives,PowerMap,ExteriorMap,
+        summary,parameters,coefficients,
         moments,area,centroid,Jmoment,addedmass
 
-struct PowerMap <: ConformalMap
-    "power series coefficients, ccoeff[1] -> c₁, ccoeff[2] -> c₀, ccoeff[3] -> c₋₁, etc"
-    ccoeff::Vector{Complex128}
+struct PowerSeries{N,T}
+  ccoeff :: Vector{T}
+  dcoeff :: Vector{T}
+end
 
-    "number of multipole coefficients (in addition to c₁ and c₀)"
-    ncoeff::Int
+function PowerSeries(ccoeff::Vector{T},dcoeff::Vector{T}) where T
+  ncoeff = length(ccoeff)-2
+  PowerSeries{ncoeff,T}(ccoeff,dcoeff)
+end
+
+function Base.show(io::IO,ps::PowerSeries{N,T}) where {N,T}
+  println(io, "multipole coefficients:")
+  println(io, "  c₁ = $(ps.ccoeff[1]), ")
+  println(io, "  c₀ = $(ps.ccoeff[2]), ")
+  print(io,   "  c₋ᵢ = ")
+  for i = 1:N
+    print(io,"$(ps.ccoeff[2+i]), ")
+  end
+  println(io, "i = 1:$(N)")
+end
+
+function (ps::PowerSeries)(ζ::T) where T<:Number
+  ζⁿ = ζ
+  z = zero(ζ)
+  for c in ps.ccoeff
+    z += c*ζⁿ
+    ζⁿ /= ζ
+  end
+  return z
+end
+
+(ps::PowerSeries)(ζ::Vector{T}) where T<:Number = ps.(ζ)
+
+struct PowerSeriesDerivatives
+  ps :: PowerSeries
+end
+
+function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
+  C = dps.ps.ccoeff
+  dz = C[1]
+  ζⁿ = 1/ζ^2
+  ddz = Complex128(0)
+  for n in 1:length(C)-2
+    dz -= n*C[n+2]*ζⁿ
+    ζⁿ /= ζ
+    ddz += n*(n+1)*C[n+2]*ζⁿ
+  end
+  return dz, ddz
+end
+
+function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
+  dz = zeros(ζs)
+  ddz = zeros(ζs)
+  for (i,ζ) in enumerate(ζs)
+    dz[i], ddz[i] = dps(ζ)
+  end
+  return dz, ddz
+end
+
+
+struct PowerMap <: ConformalMap
+    "Power series"
+    ps::PowerSeries
+
+    "Derivatives of power series"
+    dps::PowerSeriesDerivatives
 
     "number of plotting control points"
     N::Int
@@ -30,9 +91,6 @@ struct PowerMap <: ConformalMap
 
     "map Jacobian in body-fixed coordinates"
     dzdζ::Vector{Complex128}
-
-    "coefficients of power series of |z̃(ζ)|²"
-    dcoeff::Vector{Complex128}
 
     "Area enclosed by the mapped shape"
     area      :: Float64
@@ -97,10 +155,6 @@ function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
   end
   ncoeff = length(ccoeff)-2
 
-  ζ = circle(N)
-  z = powerseries(ζ,ccoeff)
-  dz, ddz = d_powerseries(ζ,ccoeff)
-
 
   # Coefficients of |z(ζ)|²
   # dcoeff[1] = d₀, dcoeff[2] = d₋₁, etc.
@@ -109,13 +163,19 @@ function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
   for k = 1:ncoeff+1
       push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
   end
+  ps = PowerSeries(ccoeff,dcoeff)
+  dps = PowerSeriesDerivatives(ps)
 
-  area, Zc, J = shape_moments(ccoeff,dcoeff)
+  ζ = circle(N)
+  z = ps(ζ)
+  dz, ddz = dps(ζ)
 
-  Ma = addedmass(ccoeff,dcoeff,area)
 
+  area, Zc, J = shape_moments(ps)
 
-  PowerMap(ccoeff, ncoeff, N, ζ, z, dz, dcoeff, area, Zc, J, Ma)
+  Ma = addedmass(ps,area)
+
+  PowerMap(ps, dps, N, ζ, z, dz, area, Zc, J, Ma)
 end
 
 function Base.show(io::IO, m::PowerMap)
@@ -123,67 +183,23 @@ function Base.show(io::IO, m::PowerMap)
 end
 
 function Base.summary(m::PowerMap)
-  println(io, "multipole coefficients:")
-  println(io, "  c₁ = $(m.ccoeff[1]), ")
-  println(io, "  c₀ = $(m.ccoeff[2]), ")
-  print(io,   "  c₋ᵢ = ")
-  for i = 1:m.ncoeff
-    print(io,"$(m.ccoeff[2+i]), ")
-  end
-  println(io, "i = 1:$(m.ncoeff)")
+  m.ps
 end
 
-(m::PowerMap)(ζ) = powerseries(ζ,m.ccoeff)
+(m::PowerMap)(ζ) = m.ps(ζ)
 
-(dm::DerivativeMap{PowerMap})(ζ) = d_powerseries(ζ,dm.m.ccoeff)
+(dm::DerivativeMap{PowerMap})(ζ) = dm.m.dps(ζ)
 
 
-function powerseries(ζ::Complex128,C::Vector{Complex128})
-  ζⁿ = ζ
-  z = zero(ζ)
-  for c in C
-    z += c*ζⁿ
-    ζⁿ /= ζ
-  end
-  z
-end
+function shape_moments(ps::PowerSeries)
 
-powerseries(ζs::Vector{Complex128},C::Vector{Complex128}) =
-              [powerseries(ζ,C) for ζ in ζs]
-
-function d_powerseries(ζ::Complex128,C::Vector{Complex128})
-  dz = C[1]
-  ζⁿ = 1/ζ^2
-  ddz = Complex128(0)
-  for n in 1:length(C)-2
-    dz -= n*C[n+2]*ζⁿ
-    ζⁿ /= ζ
-    ddz += n*(n+1)*ζⁿ
-  end
-  return dz, ddz
-end
-
-function d_powerseries(ζs::Vector{Complex128},C::Vector{Complex128})
-
-  dz = zeros(ζs)
-  ddz = zeros(ζs)
-  for (i,ζ) in enumerate(ζs)
-    dz[i], ddz[i] = d_powerseries(ζ,C)
-  end
-  return dz, ddz
-
-end
-
-function shape_moments(ccoeff::Vector{Complex128},
-                       dcoeff::Vector{Complex128})
-
-  ncoeff = length(ccoeff)-2
+  ncoeff = length(ps.ccoeff)-2
   k = -1:ncoeff
   l = -1:ncoeff
-  kml = k[:,ones(Int,length(ccoeff))]'-l[:,ones(Int,length(ccoeff))]
+  kml = k[:,ones(Int,length(ps.ccoeff))]'-l[:,ones(Int,length(ps.ccoeff))]
 
-  c = Reflect(ShiftReindex(ccoeff,-2))
-  d = Reflect(OddReindex(dcoeff))
+  c = Reflect(ShiftReindex(ps.ccoeff,-2))
+  d = Reflect(OddReindex(ps.dcoeff))
 
   area = -π*sum(k.*abs.(c(-k)).^2)
 
@@ -230,13 +246,10 @@ struct ExteriorMap <: ConformalMap
   prevangle :: Vector{Float64}
 
   "Number of multipole coefficients"
-  ncoeff    :: Int64
+  ncoeff :: Int
 
-  "Multipole coefficients for z(ζ). ccoeff[1] -> c₁, ccoeff[2] -> c₀, etc."
-  ccoeff    :: Vector{Complex128}
-
-  "Multipole coefficients for |z(ζ)|². dcoeff[1] -> d₀, doceff[2] -> d₋₁, etc."
-  dcoeff    :: Vector{Complex128}
+  "Multipole coefficients for z(ζ) and |z(ζ)|²"
+  ps    :: PowerSeries
 
   "Moments of prevertices"
   mom       :: Vector{Complex128}
@@ -366,14 +379,14 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
   for k = 1:ncoeff+1
     push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
   end
+  ps = PowerSeries(ccoeff,dcoeff)
 
   area, Zc, J = shape_moments(vertex(p))
 
-  Ma = addedmass(ccoeff,dcoeff,area)
-
+  Ma = addedmass(ps,area)
 
   ExteriorMap(n,p.vert,p.angle,qdat,tol,zeta,c,preprev,prevangle,
-              ncoeff,ccoeff,dcoeff,mom,area,Zc,J,Ma)
+              ncoeff,ps,mom,area,Zc,J,Ma)
 end
 
 function shape_moments(z::Vector{Complex128})
@@ -621,7 +634,7 @@ julia> ccoeff
  -0.000381357-0.00174291im
 ```
 """
-coefficients(m::ConformalMap) = m.ccoeff, m.dcoeff
+coefficients(m::ConformalMap) = m.ps.ccoeff, m.ps.dcoeff
 
 """
     moments(m::ExteriorMap) -> Vector{Complex128}
@@ -743,14 +756,12 @@ julia> addedmass(m)
 """
 addedmass(m::ConformalMap) = m.Ma
 
-function addedmass(ccoeff::Vector{Complex128},
-                   dcoeff::Vector{Complex128},
-                   area::Float64)
+function addedmass(ps::PowerSeries,area::Float64)
   M = zeros(3,3)
-  c = Reflect(ShiftReindex(ccoeff,-2))
-  d = Reflect(OddReindex(dcoeff))
+  c = Reflect(ShiftReindex(ps.ccoeff,-2))
+  d = Reflect(OddReindex(ps.dcoeff))
 
-  k = 1:length(dcoeff)+1
+  k = 1:length(ps.ccoeff)+1
   M[1,1] = 0.5sum(k.*abs.(d(-k)).^2)
   M[1,2] = M[2,1] = -imag(c(1)*d(-1))
   M[1,3] = M[3,1] =  real(c(1)*d(-1))

@@ -87,7 +87,7 @@ function conformal_grid(m::SchwarzChristoffel.ConformalMap)
   ax1[:set_xticks](ceil(-xmaxc/2)*2:2:floor(xmaxc/2)*2)
   ax1[:set_yticks](ceil(-xmaxc/2)*2:2:floor(xmaxc/2)*2)
 
-  xmaxp = xmaxc*abs(m.ccoeff[1])
+  xmaxp = xmaxc*abs(m.ps.ccoeff[1])
   dxp = round(xmaxp)*0.5
   ax2[:axis]("scaled")
   ax2[:axis]([-xmaxp,xmaxp,-xmaxp,xmaxp])
