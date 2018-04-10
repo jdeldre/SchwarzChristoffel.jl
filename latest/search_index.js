@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Properties.InverseMap",
     "category": "type",
-    "text": "InverseMap(m::ExteriorMap)\n\nConstructs the inverse conformal map of the conformal map m.\n\nThis inverse conformal map can be evaluated at a single or vector of points. Points should be outside the body. Whether the resulting point in the circle plane is interpreted inside or outside the circle is determined by the optional argument inside, which defaults to false.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> m⁻¹ = InverseMap(m);\n\njulia> ζ = [1.0+3.0im,-2.0-2.0im,0.1+1.1im];\n\njulia> m⁻¹(m(ζ))\n3-element Array{Complex{Float64},1}:\n  1.0+3.0im\n -2.0-2.0im\n  0.1+1.1im\n\n\n\n"
+    "text": "InverseMap(m::ConformalMap)\n\nConstructs the inverse conformal map of the conformal map m.\n\nThis inverse conformal map can be evaluated at a single or vector of points. Points should be outside the body. Whether the resulting point in the circle plane is interpreted inside or outside the circle is determined by the optional argument inside, which defaults to false.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> m⁻¹ = InverseMap(m);\n\njulia> ζ = [1.0+3.0im,-2.0-2.0im,0.1+1.1im];\n\njulia> m⁻¹(m(ζ))\n3-element Array{Complex{Float64},1}:\n  1.0+3.0im\n -2.0-2.0im\n  0.1+1.1im\n\n\n\n"
 },
 
 {
