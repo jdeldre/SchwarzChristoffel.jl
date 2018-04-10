@@ -252,6 +252,8 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
   M = length(z)
   iter = Int(0)
 
+  A = zeros(Float64,2,2)
+
   zetabase = NaN*ones(Complex128,n)
   zbase = NaN*ones(Complex128,n)
   idx = []
@@ -283,10 +285,10 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
 
         done[active] = ones(Bool,sum(active))
         for k in [1:j-1;j+1:n]'
-          A = [real(direcn[k]);imag(direcn[k])]
+          A[:,1] = [real(direcn[k]);imag(direcn[k])]
           for p in find(active)
             dif = z0[p]-z[p]
-              A = hcat(A,[real(dif);imag(dif)])
+              A[:,2] = [real(dif);imag(dif)]
               if cond(A) < eps()
                 zx = real( (z[p]-anchor[k]) / direcn[k] )
                 z0x = real( (z0[p]-anchor[k]) / direcn[k] )
@@ -321,7 +323,7 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
           else
             iter += 1
           end
-          factor = rand(1)
+          factor = rand(1)[1]
         end # for j
 
   end  # while M
