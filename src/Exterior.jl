@@ -542,13 +542,6 @@ julia> dz
   67.2068+76.6284im
  -1.11666+0.544576im
   3.99129-5.30641im
-
-julia> ζ = 1.0+3.0im;
-
-julia> dz, ddz = dm(ζ);
-
-julia> dz
-1.0305280030434558 + 0.0044499240190600114im
 ```
 """function DerivativeMap() end
 
