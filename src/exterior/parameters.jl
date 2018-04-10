@@ -1,5 +1,7 @@
 using NLsolve
 
+using DifferentialEquations
+
 function param(w::Vector{Complex128},beta::Vector{Float64},
                  zeta0::Vector{Complex128},
                  qdat::Tuple{Array{Float64,2},Array{Float64,2}})
@@ -135,9 +137,13 @@ function evalinv_exterior(z::Vector{Complex128},w::Vector{Complex128},
                   beta::Vector{Float64},prev::Vector{Complex128},
                   c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
+
    n = length(w)
    zeta = zeros(Complex128,size(z))
    lenz = length(z)
+   zeta0 = []
+   maxiter = 10
+   tol = 10.0^(-size(qdat[1],1))
 
    # Find z values close to vertices and set zeta to the corresponding
    # prevertices
@@ -155,73 +161,59 @@ function evalinv_exterior(z::Vector{Complex128},w::Vector{Complex128},
    # Now, for remaining z values, first try to integrate
    #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
    # with the initial condition ζ(0) = ζ₀.
+   if isempty(zeta0)
+     zeta0,z0 = initial_guess(z,w,beta,prev,c,qdat)
+   else
+     z0 = evaluate_exterior(zeta0,w,beta,prev,c,qdat)
+     if length(zeta0)==1 && lenz > 1
+       zeta0 = zeta0[:,ones(Int,lenz)].'
+       z0 = z0[:,ones(Int,lenz)].'
+     end
+     z0 = z0[.~done]
+     zeta0 = zeta0[.~done]
+   end
+   odetol = max(tol,1e-3)
+   scale = z[.~done] - z0
 
+   zeta0 = [real(zeta0);imag(zeta0)]
 
-   return zeta
+   f(zeta,p,t) = invfunc(zeta,scale,beta,prev,c)
+   tspan = (0.0,1.0)
+   prob = ODEProblem(f,zeta0,tspan)
+   sol = solve(prob,Tsit5(),reltol=1e-8,abstol=1e-8)
+   lenu = length(zeta0)
+   zeta[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+   out = abs.(zeta) .> 1
+   zeta[out] = sign.(zeta[out])
 
+   # Now use Newton iterations to improve the solution
+   zetan = zeta
+   k = 0
+   while ~all(done) && k < maxiter
+     F = z[.~done] - evaluate_exterior(zetan[.~done],w,beta,prev,c,qdat)
+     M = length(F)
+     dF, ddz = evalderiv_exterior(zetan[.~done],beta,prev,c)
+     zetan[.~done] = zetan[.~done] + F./dF
 
-#
-# % ODE
-# if ode
-#   if isempty(zeta0)
-#     % Pick a value z0 (not a singularity) and compute the map there.
-#     [z0,w0] = scimapz0('de',z(~done),w,beta,prev,c,qdat);
-#   else
-#     w0 = demap(zeta0,w,beta,prev,c,qdat);
-#     if length(zeta0)==1 & lenz > 1
-#       zeta = zeta0(:,ones(lenz,1)).';
-#       w0 = w0(:,ones(lenz,1)).';
-#     end
-#     w0 = w0(~done);
-#     zeta0 = zeta0(~done);
-#   end
-#
-#   % Use relaxed ODE tol if improving with Newton.
-#   odetol = max(tol,1e-3*(newton));
-#
-#   % Rescale dependent coordinate
-#   scale = (z(~done) - w0(:));
-#
-#   % Solve ODE
-#   zeta0 = [real(zeta0);imag(zeta0)];
-#   [t,y] = ode23('deimapfun',[0,0.5,1],zeta0,odeset('abstol',odetol),...
-#       scale,prev,beta,c);
-#   [m,leny] = size(y);
-#   zeta(~done) = y(m,1:lenz)+sqrt(-1)*y(m,lenz+1:leny);
-#   out = abs(zeta) > 1;
-#   zeta(out) = sign(zeta(out));
-# end
-#
-# % Newton iterations
-# if newton
-#   if ~ode
-#     zetan = zeta0(:);
-#     if length(zeta0)==1 & lenz > 1
-#       zetan = zetan(:,ones(lenz,1));
-#     end
-#     zetan(done) = zeta(done);
-#   else
-#     zetan = zetap(:);
-#   end
-#
-#   z = z(:);
-#   k = 0;
-#   while ~all(done) & k < maxiter
-#     F = z(~done) - demap(zetan(~done),w,beta,prev,c,qdat);
-#     m = length(F);
-#     dF = c*(zetan(~done).').^(-2) .* exp(sum(beta(:,ones(m,1)) .* ...
-#       log(1-(zetan(~done,ones(n,1)).')./prev(:,ones(m,1)))));
-#     zetan(~done) = zetan(~done) + F(:)./dF(:);
-#     done(~done) = (abs(F)< tol);
-#     k = k+1;
-#   end
-#   if any(abs(F)> tol)
-#     str = sprintf('Check solution; maximum residual = %.3g\n',max(abs(F)));
-#     warning(str)
-#   end
-#   zeta(:) = zetan;
-# end
+     done[.~done] = abs.(F).< tol
+     k += 1
+   end
+   F = z[.~done] - evaluate_exterior(zetan[.~done],w,beta,prev,c,qdat)
+   if any(abs.(F).> tol)
+     error("Check solution")
+   end
+   zeta = zetan
 
+end
+
+function invfunc(u,scale,beta,prev,c)
+    lenu = length(u)
+    lenzp = Int(lenu/2)
+    zeta = u[1:lenzp]+im*u[lenzp+1:lenu]
+
+    dz, ddz = evalderiv_exterior(zeta,beta,prev,c)
+    f = scale./dz
+    zdot = [real(f);imag(f)]
 end
 
 function initial_guess(z::Vector{Complex128},w::Vector{Complex128},

@@ -468,6 +468,22 @@ end
 (m::ExteriorMap)(ζ::Complex128;inside::Bool=false) = getindex(m([ζ];inside=inside),1)
 
 
+function (minv::InverseMap{ExteriorMap})(z::Vector{Complex128};inside::Bool=false)
+  if inside
+    return evalinv_exterior(z,flipdim(minv.m.z,1),1.-flipdim(minv.m.angle,1),
+            minv.m.ζ,minv.m.constant,minv.m.qdata)
+  else
+    σ = evalinv_exterior(z,flipdim(minv.m.z,1),1.-flipdim(minv.m.angle,1),
+            minv.m.ζ,minv.m.constant,minv.m.qdata)
+    b = -minv.m.constant/abs(minv.m.constant)
+
+    return b./σ
+  end
+
+end
+
+(minv::InverseMap{ExteriorMap})(z::Complex128;inside::Bool=false) =
+                getindex(minv([z];inside=inside),1)
 
 
 """
