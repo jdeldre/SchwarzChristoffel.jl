@@ -2,6 +2,143 @@ using NLsolve
 
 using DifferentialEquations
 
+#= functions for the power series exterior map from unit disk =#
+
+struct PowerSeries{N,T}
+  ccoeff :: Vector{T}
+  dcoeff :: Vector{T}
+end
+
+function PowerSeries(ccoeff::Vector{T},dcoeff::Vector{T}) where T
+  ncoeff = length(ccoeff)-2
+  PowerSeries{ncoeff,T}(ccoeff,dcoeff)
+end
+
+function Base.show(io::IO,ps::PowerSeries{N,T}) where {N,T}
+  println(io, "multipole coefficients:")
+  println(io, "  c₁ = $(ps.ccoeff[1]), ")
+  println(io, "  c₀ = $(ps.ccoeff[2]), ")
+  print(io,   "  c₋ᵢ = ")
+  for i = 1:N
+    print(io,"$(ps.ccoeff[2+i]), ")
+  end
+  println(io, "i = 1:$(N)")
+end
+
+function (ps::PowerSeries)(ζ::T) where T<:Number
+  ζⁿ = ζ
+  z = zero(ζ)
+  for c in ps.ccoeff
+    z += c*ζⁿ
+    ζⁿ /= ζ
+  end
+  return z
+end
+
+(ps::PowerSeries)(ζ::Vector{T}) where T<:Number = ps.(ζ)
+
+struct PowerSeriesDerivatives
+  ps :: PowerSeries
+end
+
+function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
+  C = dps.ps.ccoeff
+  dz = C[1]
+  ζⁿ = 1/ζ^2
+  ddz = Complex128(0)
+  for n in 1:length(C)-2
+    dz -= n*C[n+2]*ζⁿ
+    ζⁿ /= ζ
+    ddz += n*(n+1)*C[n+2]*ζⁿ
+  end
+  return dz, ddz
+end
+
+function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
+  dz = zeros(ζs)
+  ddz = zeros(ζs)
+  for (i,ζ) in enumerate(ζs)
+    dz[i], ddz[i] = dps(ζ)
+  end
+  return dz, ddz
+end
+
+function evalinv_exterior(z::Vector{Complex128},ps::PowerSeries,
+                                dps::PowerSeriesDerivatives)
+
+   zeta = zeros(Complex128,size(z))
+   lenz = length(z)
+   zeta0 = []
+   maxiter = 10
+   tol = 1.0e-8
+
+   # Find z values close to vertices and set zeta to the corresponding
+   # prevertices
+   done = zeros(Bool,size(z))
+
+   # Now, for remaining z values, first try to integrate
+   #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
+   # with the initial condition ζ(0) = ζ₀.
+   if isempty(zeta0)
+     # choose a point on the unit circle
+     zeta0 = exp.(im*zeros(lenz))
+     z0 = ps(zeta0)
+   else
+     z0 = ps(zeta0)
+     if length(zeta0)==1 && lenz > 1
+       zeta0 = zeta0[:,ones(Int,lenz)].'
+       z0 = z0[:,ones(Int,lenz)].'
+     end
+     z0 = z0[.~done]
+     zeta0 = zeta0[.~done]
+   end
+   odetol = max(tol,1e-3)
+   scale = z[.~done] - z0
+
+   zeta0 = [real(zeta0);imag(zeta0)]
+
+   f(zeta,p,t) = invfunc(zeta,scale,dps)
+   tspan = (0.0,1.0)
+   prob = ODEProblem(f,zeta0,tspan)
+   sol = solve(prob,Tsit5(),reltol=1e-8,abstol=1e-8)
+   lenu = length(zeta0)
+   zeta[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+   out = abs.(zeta) .> 1
+   zeta[out] = sign.(zeta[out])
+
+   # Now use Newton iterations to improve the solution
+   zetan = zeta
+   k = 0
+   while ~all(done) && k < maxiter
+     F = z[.~done] - ps(zetan[.~done])
+     M = length(F)
+     dF, ddz = dps(zetan[.~done])
+     zetan[.~done] = zetan[.~done] + F./dF
+
+     done[.~done] = abs.(F).< tol
+     k += 1
+   end
+   F = z[.~done] - ps(zetan[.~done])
+   if any(abs.(F).> tol)
+     error("Check solution")
+   end
+   zeta = zetan
+
+end
+
+function invfunc(u,scale,dps::PowerSeriesDerivatives)
+    lenu = length(u)
+    lenzp = Int(lenu/2)
+    zeta = u[1:lenzp]+im*u[lenzp+1:lenu]
+
+    dz, ddz = dps(zeta)
+    f = scale./dz
+    zdot = [real(f);imag(f)]
+end
+
+
+#= functions for the Schwarz-Christoffel exterior map from unit disk =#
+
 function param(w::Vector{Complex128},beta::Vector{Float64},
                  zeta0::Vector{Complex128},
                  qdat::Tuple{Array{Float64,2},Array{Float64,2}})
@@ -206,7 +343,8 @@ function evalinv_exterior(z::Vector{Complex128},w::Vector{Complex128},
 
 end
 
-function invfunc(u,scale,beta,prev,c)
+
+function invfunc(u,scale,beta::Vector{Float64},prev::Vector{Complex128},c::Complex128)
     lenu = length(u)
     lenzp = Int(lenu/2)
     zeta = u[1:lenzp]+im*u[lenzp+1:lenu]

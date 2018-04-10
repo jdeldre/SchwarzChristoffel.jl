@@ -15,64 +15,7 @@ export PowerSeries,PowerSeriesDerivatives,PowerMap,ExteriorMap,
         summary,parameters,coefficients,
         moments,area,centroid,Jmoment,addedmass
 
-struct PowerSeries{N,T}
-  ccoeff :: Vector{T}
-  dcoeff :: Vector{T}
-end
-
-function PowerSeries(ccoeff::Vector{T},dcoeff::Vector{T}) where T
-  ncoeff = length(ccoeff)-2
-  PowerSeries{ncoeff,T}(ccoeff,dcoeff)
-end
-
-function Base.show(io::IO,ps::PowerSeries{N,T}) where {N,T}
-  println(io, "multipole coefficients:")
-  println(io, "  c₁ = $(ps.ccoeff[1]), ")
-  println(io, "  c₀ = $(ps.ccoeff[2]), ")
-  print(io,   "  c₋ᵢ = ")
-  for i = 1:N
-    print(io,"$(ps.ccoeff[2+i]), ")
-  end
-  println(io, "i = 1:$(N)")
-end
-
-function (ps::PowerSeries)(ζ::T) where T<:Number
-  ζⁿ = ζ
-  z = zero(ζ)
-  for c in ps.ccoeff
-    z += c*ζⁿ
-    ζⁿ /= ζ
-  end
-  return z
-end
-
-(ps::PowerSeries)(ζ::Vector{T}) where T<:Number = ps.(ζ)
-
-struct PowerSeriesDerivatives
-  ps :: PowerSeries
-end
-
-function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
-  C = dps.ps.ccoeff
-  dz = C[1]
-  ζⁿ = 1/ζ^2
-  ddz = Complex128(0)
-  for n in 1:length(C)-2
-    dz -= n*C[n+2]*ζⁿ
-    ζⁿ /= ζ
-    ddz += n*(n+1)*C[n+2]*ζⁿ
-  end
-  return dz, ddz
-end
-
-function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
-  dz = zeros(ζs)
-  ddz = zeros(ζs)
-  for (i,ζ) in enumerate(ζs)
-    dz[i], ddz[i] = dps(ζ)
-  end
-  return dz, ddz
-end
+include("exterior/parameters.jl")
 
 
 struct PowerMap <: ConformalMap
@@ -189,6 +132,12 @@ function Base.summary(m::PowerMap)
 end
 
 (m::PowerMap)(ζ) = m.ps(ζ)
+
+(minv::InverseMap{PowerMap})(z::Vector{Complex128}) =
+        evalinv_exterior(z,minv.m.ps,minv.m.dps)
+
+(minv::InverseMap{PowerMap})(z::Complex128) = getindex(minv([z]),1)
+
 
 (dm::DerivativeMap{PowerMap})(ζ) = dm.m.dps(ζ)
 
@@ -468,7 +417,7 @@ end
 (m::ExteriorMap)(ζ::Complex128;inside::Bool=false) = getindex(m([ζ];inside=inside),1)
 
 doc"""
-    InverseMap(m::ExteriorMap)
+    InverseMap(m::ConformalMap)
 
 Constructs the inverse conformal map of the conformal map `m`.
 
@@ -811,6 +760,5 @@ function addedmass(ps::PowerSeries,area::Float64)
 
 end
 
-include("exterior/parameters.jl")
 
 end
