@@ -3,5 +3,6 @@ Documenter
 DocStringExtensions
 FastGaussQuadrature
 NLsolve
+DifferentialEquations
 PyPlot
 TestSetExtensions

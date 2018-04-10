@@ -5,7 +5,7 @@
   beta = [0.5,0.5,0.5,0.5]
   z = [1.0im,-1.0,-1.0im,1.0]
   nqpts = 8
-  qdat = SchwarzChristoffel.Integration.qdata(beta,nqpts)
+  qdat = SchwarzChristoffel.Exterior.Integration.qdata(beta,nqpts)
   dquad = SchwarzChristoffel.Exterior.DQuad(beta,qdat)
   @test dquad([z1],[z2],[sing1],z)[1] ≈ -0.599070117 - 0.599070117im
   dabsquad = SchwarzChristoffel.Exterior.DabsQuad(beta,qdat)
@@ -14,37 +14,45 @@
   p = SchwarzChristoffel.Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0])
   m = SchwarzChristoffel.ExteriorMap(p)
   dm = SchwarzChristoffel.DerivativeMap(m)
+  m⁻¹ = SchwarzChristoffel.InverseMap(m)
   prev, C = SchwarzChristoffel.parameters(m)
   @test prev[3] ≈ -0.902383088-0.430934755im
 
   zeta = [0.1,0.5-0.75im,-0.25-0.3im]
-  @test m(zeta;inside=true) ≈
+  z = m(zeta;inside=true)
+  @test z ≈
         Complex128[-6.934402676 - 7.689645145im,
                     0.043977374 - 1.112493651im,
                     2.411813129 - 0.044778980im]
+  @test isapprox(m⁻¹(z;inside=true),zeta;atol=eps())
+
   (dz,ddz) = dm(zeta;inside=true)
-  @test dz ≈
-        Complex128[67.206798744 + 76.6283835014im,
+  @test isapprox(dz,
+        Complex128[67.206798744 + 76.628383501im,
                    -1.116655339 + 0.5445759699im,
-                    3.991294815 - 5.3064069537im]
+                    3.991294815 - 5.3064069537im];atol=eps())
   zeta = 0.5-0.75im
-  @test m(zeta;inside=true) ≈
-        0.043977374 - 1.112493651im
+  z = m(zeta;inside=true)
+  @test z ≈ 0.043977374 - 1.112493651im
+  @test m⁻¹(z;inside=true) ≈ zeta
   (dz,ddz) = dm(zeta;inside=true)
   @test dz ≈ -1.116655339 + 0.5445759699im
   zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im]
-  @test m(zeta) ≈
+  z = m(zeta)
+  @test z ≈
         Complex128[ 0.816139620 + 3.029559043im,
                    -2.252366325 - 2.085230469im,
                    -0.333104076 + 0.975837123im]
-
+  @test m⁻¹(z) ≈ zeta
   (dz,ddz) = dm(zeta)
   @test dz ≈
         Complex128[ 1.030528002 + 0.004449924im,
                     1.006955879 - 0.011501136im,
                     1.300781073 - 0.266624652im]
   zeta = 1.0+3.0im
-  @test m(zeta) ≈ 0.816139620 + 3.029559043im
+  z = m(zeta)
+  @test z ≈ 0.816139620 + 3.029559043im
+  @test m⁻¹(z) ≈ zeta
   dz, ddz = dm(zeta)
   @test dz ≈ 1.030528002 + 0.004449924im
 
