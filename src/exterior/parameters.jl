@@ -82,6 +82,7 @@ function evalinv_exterior(z::Vector{Complex128},ps::PowerSeries,
    if isempty(zeta0)
      # choose a point on the unit circle
      zeta0 = exp.(im*zeros(lenz))
+     zeta0[isapprox.(angle.(z),π;atol=eps())] = exp(im*π)
      z0 = ps(zeta0)
    else
      z0 = ps(zeta0)
