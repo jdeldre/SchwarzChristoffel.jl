@@ -83,6 +83,11 @@ function evalinv_exterior(z::Vector{Complex128},ps::PowerSeries,
      # choose a point on the unit circle
      zeta0 = exp.(im*zeros(lenz))
      zeta0[isapprox.(angle.(z),π;atol=eps())] = exp(im*π)
+     dz0,ddz0 = dps(zeta0)
+     # check for starting points on edges of the body, and rotate them
+     # a bit if so
+     onedge = isapprox.(abs.(dps(zeta0)[1]),0.0;atol=eps())
+     zeta0[onedge] .*= exp(im*π/20)
      z0 = ps(zeta0)
    else
      z0 = ps(zeta0)

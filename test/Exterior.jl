@@ -106,4 +106,13 @@ end
   dz, ddz = dm(zeta)
   @test dz ≈ 0.586 + 0.027im
 
+  a = 1
+  b = 0
+  c = Complex128[0.5(a+b),0,0.5(a-b)]
+  m = SchwarzChristoffel.PowerMap(c)
+  m⁻¹ = SchwarzChristoffel.InverseMap(m)
+  dm = SchwarzChristoffel.DerivativeMap(m)
+  z = [-1.0+0im,-1.1+0im,1.0+0im,1.1+0im]
+  @test isapprox(m(m⁻¹(z)),z;atol=eps())
+
 end
