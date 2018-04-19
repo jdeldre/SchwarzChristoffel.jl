@@ -270,7 +270,7 @@ julia> m(ζ)
  -0.333104+0.975837im
 ```
 """
-function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
+function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
 
   n = length(p.vert)
 
@@ -310,20 +310,24 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 12)
 
   # first two entries are for c₁ and c₀.
   betaflip = flipdim(beta,1)
-  ccoeff = Complex128[abs(c),0.0]
   mom = [sum(betaflip.*preprev)]
   for k = 1:ncoeff
     push!(mom,sum(betaflip.*preprev.^(k+1)))
-    coeffk = abs(c)*getcoefflist(k+1,1,mom);
-    push!(ccoeff,coeffk)
   end
 
-  # fix a
-  zetainf = 5.0*exp.(im*collect(0:π/2:3π/2))
-  sigmainf = -c/abs(c)./zetainf
-  zinf = evaluate_exterior(sigmainf,w,beta,zeta,c,qdat)
-  ccoeff[2] = mean([zinf[i]-sum(ccoeff.*zetainf[i].^(1:-1:-ncoeff))
-                  for i = 1:length(zetainf)])
+  # use numerical quadrature to compute coefficients
+  nθ = 1024
+  dθ = 2π/nθ
+  ζs = exp.(im*collect(0:nθ-1)*dθ)
+  σs = -c/abs(c)./ζs
+  dc = evaluate_exterior(σs,w,beta,zeta,c,qdat).*sin(dθ)
+  dc ./= ζs
+  ccoeff = Complex128[]
+  for k = -1:ncoeff
+    push!(ccoeff,sum(dc))
+    dc .*= ζs
+  end
+  ccoeff ./= 2π
 
   # first entry is d₀
   dcoeff = [dot(ccoeff,ccoeff)]
