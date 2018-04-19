@@ -237,9 +237,9 @@ Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices
 `ExteriorMap(p;tol=1e-12)` manually sets the tolerance to `1e-12`
 (the default is 1e-8).
 
-`ExteriorMap(p;ncoeff=16)` manually sets the number of coefficients of
-negative powers of the multipole expansion of the mapping to `16`
-(the default is 12).
+`ExteriorMap(p;ncoeff=200)` manually sets the number of coefficients of
+negative powers of the multipole expansion of the mapping to `200`
+(the default is 100).
 
 The resulting map `m` can be evaluated at a single or vector of points `ζ`
 with `m(ζ[;inside::Bool])`. The points are assumed to lie outside the unit
@@ -328,6 +328,8 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
     dc .*= ζs
   end
   ccoeff ./= 2π
+  # the first coefficient should be abs(c), but we don't set this
+  # explicitly
 
   # first entry is d₀
   dcoeff = [dot(ccoeff,ccoeff)]
@@ -542,7 +544,7 @@ Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices
    prevertices on circle: (1.0,0.0), (0.3764,-0.9265), (-0.9024,-0.4309), (-0.1868,0.9824),
    prevertex angles/π: -0.7291, -0.3519, 0.1291, 0.7111,
    constant = 0.6722 + 0.7669im, accuracy = 1.0e-8,
-   number of multipole coefficients = 12
+   number of multipole coefficients = 100
 ```
 
 """function Base.summary() end
@@ -609,21 +611,33 @@ julia> m = ExteriorMap(p);
 julia> ccoeff, dcoeff = coefficients(m);
 
 julia> ccoeff
-14-element Array{Complex{Float64},1}:
-       1.0198+0.0im
-    -0.210364-0.0161983im
-  -0.00655708+0.0398156im
-     0.136922+0.0951343im
-    -0.095035+0.0891769im
-    0.0184341+0.0299586im
-    0.0136513+2.78095e-5im
-   -0.0159533-0.00264418im
-  -0.00167426-0.00501161im
-  -0.00578705-0.000221652im
-  -0.00447511+0.00252069im
-   0.00469089-0.00150588im
-  0.000441767-0.00192516im
- -0.000381357-0.00174291im
+102-element Array{Complex{Float64},1}:
+     1.01979-4.04379e-8im
+   -0.210362-0.0161982im
+ -0.00655707+0.0398154im
+    0.136921+0.0951338im
+  -0.0950344+0.0891764im
+   0.0184341+0.0299584im
+   0.0136512+2.77791e-5im
+  -0.0159532-0.00264418im
+ -0.00167427-0.00501158im
+ -0.00578702-0.0002216im
+ -0.00447503+0.00252066im
+  0.00469089-0.00150593im
+ 0.000441742-0.00192517im
+            ⋮
+  1.65856e-5+1.34393e-5im
+  1.60687e-5-6.32536e-6im
+  2.15975e-6-1.57441e-5im
+  8.19332e-6-3.81206e-6im
+  -1.2665e-5-2.23604e-7im
+ -3.36951e-6+1.49706e-5im
+  1.90953e-5+1.50419e-5im
+  1.04014e-6-3.59844e-6im
+  1.03458e-6-4.30507e-6im
+ -5.91487e-6-2.46997e-6im
+  -2.2201e-5+3.57274e-6im
+  2.85723e-6+1.21508e-5im
 ```
 """
 coefficients(m::ConformalMap) = m.ps.ccoeff, m.ps.dcoeff

@@ -57,7 +57,7 @@
   @test dz ≈ 1.030528002 + 0.004449924im
 
   ccoeff, dcoeff = SchwarzChristoffel.coefficients(m)
-  @test ccoeff[1] ≈ 1.019795410
+  @test ccoeff[1] ≈ 1.019789030 - 4.043787137e-8im
 
 end
 
