@@ -315,7 +315,9 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
     push!(mom,sum(betaflip.*preprev.^(k+1)))
   end
 
-  # use numerical quadrature to compute coefficients
+  # use numerical quadrature to compute the first two coefficients
+  # the first coefficient should be abs(c), but we don't set this
+  # explicitly
   nθ = 1024
   dθ = 2π/nθ
   ζs = exp.(im*collect(0:nθ-1)*dθ)
@@ -323,14 +325,29 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
   dc = evaluate_exterior(σs,w,beta,zeta,c,qdat).*sin(dθ)
   dc ./= ζs
   ccoeff = Complex128[]
-  for k = -1:ncoeff
+  for k = -1:0
     push!(ccoeff,sum(dc))
     dc .*= ζs
   end
   ccoeff ./= 2π
-  # the first coefficient should be abs(c), but we don't set this
-  # explicitly
 
+  # now, we use Gauss-Jacobi quadrature for the remaining coefficients.
+  ζ = [zeta;zeta[1]]
+  N = n+1
+  argz1 = angle.(ζ[1:N-1])
+  argz2 = angle.(ζ[2:N])
+  ang21 = angle.(ζ[2:N]./ζ[1:N-1])
+  discont = (argz2-argz1).*ang21 .< 0
+  argz2[discont] += 2π*sign.(ang21[discont])
+  mid = exp.(im*0.5*(argz1+argz2))
+  qdat2 = qdata(beta,max(ceil(Int,ncoeff/2),nqpts))
+  dabsquad = DabsQuad(beta,qdat2)
+  for k = 1:ncoeff
+     push!(ccoeff,c*(-c/abs(c))^k*sum(dabsquad(ζ[1:N-1],mid,collect(1:N-1),zeta,-k)+
+                  dabsquad(ζ[2:N],mid,[collect(2:N-1);1],zeta,-k))/(2π*k))
+  end
+
+  # Now compute the coefficients of the square mapping
   # first entry is d₀
   dcoeff = [dot(ccoeff,ccoeff)]
   for k = 1:ncoeff+1
@@ -655,7 +672,7 @@ julia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);
 julia> m = ExteriorMap(p);
 
 julia> mom = moments(m)
-13-element Array{Complex{Float64},1}:
+101-element Array{Complex{Float64},1}:
  -2.46691e-9+3.04899e-9im
   -0.0128596+0.0780855im
     0.805587+0.559726im
@@ -669,6 +686,19 @@ julia> mom = moments(m)
       1.1618-0.762023im
   -0.0612155-0.5728im
    -0.223423-0.726949im
+            ⋮
+     1.14794+0.222178im
+    0.623431-0.427566im
+   0.0391696-0.979532im
+     1.28799+0.274697im
+   -0.370446+0.098561im
+   0.0812541+0.561855im
+      1.3454+1.20213im
+   -0.624971+0.0891481im
+ -0.00618809+0.185184im
+    -0.14731+0.485246im
+    -1.86015+0.0189042im
+    0.175036+0.418611im
 ```
 """
 moments(m::ExteriorMap) = m.mom
