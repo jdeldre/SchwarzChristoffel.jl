@@ -157,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.ExteriorMap",
     "category": "method",
-    "text": "ExteriorMap(p::Polygon[;tol::Float64][,ncoeff::Int]) <: ConformalMap\n\nCreate a Schwarz-Christoffel map from the interior or exterior of the unit circle to the exterior of polygon p.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p)\nSchwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices\n\nExteriorMap(p;tol=1e-12) manually sets the tolerance to 1e-12 (the default is 1e-8).\n\nExteriorMap(p;ncoeff=16) manually sets the number of coefficients of negative powers of the multipole expansion of the mapping to 16 (the default is 12).\n\nThe resulting map m can be evaluated at a single or vector of points ζ with m(ζ[;inside::Bool]). The points are assumed to lie outside the unit circle, unless the optional argument inside=true, in which case they are assumed to lie inside the circle.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> ζ = [0.1,0.5-0.75im,-0.25-0.3im];\n\njulia> m(ζ;inside=true)\n3-element Array{Complex{Float64},1}:\n   -6.9344-7.68965im\n 0.0439774-1.11249im\n   2.41181-0.044779im\n\njulia> ζ = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];\n\njulia> m(ζ)\n3-element Array{Complex{Float64},1}:\n   0.81614+3.02956im\n  -2.25237-2.08523im\n -0.333104+0.975837im\n\n\n\n"
+    "text": "ExteriorMap(p::Polygon[;tol::Float64][,ncoeff::Int]) <: ConformalMap\n\nCreate a Schwarz-Christoffel map from the interior or exterior of the unit circle to the exterior of polygon p.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p)\nSchwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices\n\nExteriorMap(p;tol=1e-12) manually sets the tolerance to 1e-12 (the default is 1e-8).\n\nExteriorMap(p;ncoeff=200) manually sets the number of coefficients of negative powers of the multipole expansion of the mapping to 200 (the default is 100).\n\nThe resulting map m can be evaluated at a single or vector of points ζ with m(ζ[;inside::Bool]). The points are assumed to lie outside the unit circle, unless the optional argument inside=true, in which case they are assumed to lie inside the circle.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> ζ = [0.1,0.5-0.75im,-0.25-0.3im];\n\njulia> m(ζ;inside=true)\n3-element Array{Complex{Float64},1}:\n   -6.9344-7.68965im\n 0.0439774-1.11249im\n   2.41181-0.044779im\n\njulia> ζ = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];\n\njulia> m(ζ)\n3-element Array{Complex{Float64},1}:\n   0.81614+3.02956im\n  -2.25237-2.08523im\n -0.333104+0.975837im\n\n\n\n"
 },
 
 {
@@ -173,7 +173,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Exterior map",
     "title": "Base.summary",
     "category": "method",
-    "text": "summary(m::ConformalMap)\n\nReturns a summary of data for a conformal map\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> summary(m)\nSchwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices\n   vertices: (-1.0,-1.0), (0.2,-1.0), (1.0,0.5), (-1.0,1.0),\n   interior angles/π: 0.5, 0.656, 0.422, 0.422,\n   prevertices on circle: (1.0,0.0), (0.3764,-0.9265), (-0.9024,-0.4309), (-0.1868,0.9824),\n   prevertex angles/π: -0.7291, -0.3519, 0.1291, 0.7111,\n   constant = 0.6722 + 0.7669im, accuracy = 1.0e-8,\n   number of multipole coefficients = 12\n\n\n\n"
+    "text": "summary(m::ConformalMap)\n\nReturns a summary of data for a conformal map\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> summary(m)\nSchwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices\n   vertices: (-1.0,-1.0), (0.2,-1.0), (1.0,0.5), (-1.0,1.0),\n   interior angles/π: 0.5, 0.656, 0.422, 0.422,\n   prevertices on circle: (1.0,0.0), (0.3764,-0.9265), (-0.9024,-0.4309), (-0.1868,0.9824),\n   prevertex angles/π: -0.7291, -0.3519, 0.1291, 0.7111,\n   constant = 0.6722 + 0.7669im, accuracy = 1.0e-8,\n   number of multipole coefficients = 100\n\n\n\n"
 },
 
 {
@@ -189,7 +189,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.addedmass",
     "category": "method",
-    "text": "addedmass(m::ConformalMap) -> Array{Float64,2}\n\nReturns the added mass matrix of the shape described by the conformal mapping m.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> addedmass(m)\n3×3 Array{Float64,2}:\n  0.723706    0.0944715  -1.3739\n  0.0944715   3.67642    -0.255121\n -1.3739     -0.255121    3.59239\n\n\n\n"
+    "text": "addedmass(m::ConformalMap) -> Array{Float64,2}\n\nReturns the added mass matrix of the shape described by the conformal mapping m.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> addedmass(m)\n3×3 Array{Float64,2}:\n  0.725129    0.0944902  -1.37387\n  0.0944902   3.67634    -0.255119\n -1.37387    -0.255119    3.59231\n\n\n\n"
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.coefficients",
     "category": "method",
-    "text": "coefficients(m::ConformalMap) -> Tuple{Vector{Complex128},Vector{Complex128}}\n\nReturns a tuple of vectors of the complex coefficients of the multipole expansion of the mapping z(zeta) described by m as well as the coefficients of the square magnitude of the mapping z(zeta)^2.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> ccoeff, dcoeff = coefficients(m);\n\njulia> ccoeff\n14-element Array{Complex{Float64},1}:\n       1.0198+0.0im\n    -0.210364-0.0161983im\n  -0.00655708+0.0398156im\n     0.136922+0.0951343im\n    -0.095035+0.0891769im\n    0.0184341+0.0299586im\n    0.0136513+2.78095e-5im\n   -0.0159533-0.00264418im\n  -0.00167426-0.00501161im\n  -0.00578705-0.000221652im\n  -0.00447511+0.00252069im\n   0.00469089-0.00150588im\n  0.000441767-0.00192516im\n -0.000381357-0.00174291im\n\n\n\n"
+    "text": "coefficients(m::ConformalMap) -> Tuple{Vector{Complex128},Vector{Complex128}}\n\nReturns a tuple of vectors of the complex coefficients of the multipole expansion of the mapping z(zeta) described by m as well as the coefficients of the square magnitude of the mapping z(zeta)^2.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> ccoeff, dcoeff = coefficients(m);\n\n\n\n"
 },
 
 {
@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.moments",
     "category": "method",
-    "text": "moments(m::ExteriorMap) -> Vector{Complex128}\n\nReturn the moments of the prevertices for exterior polygon mapping m.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> mom = moments(m)\n13-element Array{Complex{Float64},1}:\n -2.46691e-9+3.04899e-9im\n  -0.0128596+0.0780855im\n    0.805587+0.559726im\n    -1.12125+1.04835im\n    0.316471+0.633964im\n    0.462871+0.225702im\n    -1.56266+0.0306815im\n   -0.106975-0.476173im\n   -0.720332-0.0496159im\n     -1.1805+0.0838739im\n      1.1618-0.762023im\n  -0.0612155-0.5728im\n   -0.223423-0.726949im\n\n\n\n"
+    "text": "moments(m::ExteriorMap) -> Vector{Complex128}\n\nReturn the moments of the prevertices for exterior polygon mapping m.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> mom = moments(m);\n\n\n\n"
 },
 
 {
