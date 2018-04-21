@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basic Usage · SchwarzChristoffel.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/><link href="assets/custom.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>SchwarzChristoffel.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="index.html">Home</a></li><li class="current"><a class="toctext" href="usage.html">Basic Usage</a><ul class="internal"></ul></li><li><span class="toctext">Reference</span><ul><li><a class="toctext" href="polygons.html">Polygons</a></li><li><a class="toctext" href="exterior.html">Exterior map</a></li><li><a class="toctext" href="plotting.html">Plotting</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href="usage.html">Basic Usage</a></li></ul><a class="edit-page" href="https://github.com/jdeldre/SchwarzChristoffel.jl/blob/master/docs/src/usage.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Basic Usage</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Basic-usage-1" href="#Basic-usage-1">Basic usage</a></h1><div></div><p>First, we create a polygon shape by specifying its vertices. Note that the vertices must be provided in counter-clockwise order.</p><pre><code class="language-julia-repl">julia&gt; x = [-1.0,0.2,1.0,-1.0]; y = [-1.0,-1.0,0.5,1.0];
+
+julia&gt; p = Polygon(x,y)
+Polygon with 4 vertices at
+             (-1.0,-1.0) (0.2,-1.0) (1.0,0.5) (-1.0,1.0)
+             interior angles/π = [0.5, 0.656, 0.422, 0.422]</code></pre><p>Let&#39;s plot the polygon to make sure it matches what we wanted.</p><pre><code class="language-julia-repl">julia&gt; plot(p)</code></pre><p><img src="polygon4.svg" alt/></p><p>Now, we create the map from the unit circle to the polygon.</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
+Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices</code></pre><p>Let&#39;s visualize what we&#39;ve constructed. Here, we will inspect the mapping from the exterior of the unit circle to the exterior of the polygon.</p><pre><code class="language-julia-repl">julia&gt; conformal_grid(m)</code></pre><p><img src="polygongrid.svg" alt/></p><p>We can now easily evaluate the map at any place we like. It could be evaluated outside the unit circle:</p><pre><code class="language-julia-repl">julia&gt; ζ = 1.2 + 0.1im
+1.2 + 0.1im
+
+julia&gt; m(ζ)
+1.0849884084568375 + 0.24108313736010523im</code></pre><p>or it could be evaluated inside the unit circle:</p><pre><code class="language-julia-repl">julia&gt; ζ = 0.5 + 0.1im
+0.5 + 0.1im
+
+julia&gt; m(ζ;inside=true)
+-1.7897029858409854 - 1.2882910977565603im</code></pre><p>We can also evaluate the first and second derivative of the map at any place(s). Let&#39;s evaluate at a range of points outside the circle.</p><pre><code class="language-julia-repl">julia&gt; dm = DerivativeMap(m)
+d/dζ of Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices
+
+julia&gt; ζ = collect(1.1:0.1:2.0) + 0.1im
+10-element Array{Complex{Float64},1}:
+ 1.1+0.1im
+ 1.2+0.1im
+ 1.3+0.1im
+ 1.4+0.1im
+ 1.5+0.1im
+ 1.6+0.1im
+ 1.7+0.1im
+ 1.8+0.1im
+ 1.9+0.1im
+ 2.0+0.1im
+
+julia&gt; dz,ddz = dm(ζ);
+
+julia&gt; dz
+10-element Array{Complex{Float64},1}:
+ 0.872356-0.394475im
+ 0.901724-0.289355im
+ 0.925562-0.217994im
+ 0.944059-0.168264im
+ 0.958255-0.132657im
+  0.96919-0.106522im
+ 0.977695-0.0869128im
+ 0.984389-0.0719115im
+ 0.989723-0.0602376im
+ 0.994025-0.0510144im</code></pre><div></div><p>Now let&#39;s try a more interesting shape. Here&#39;s a star-shaped body</p><pre><code class="language-julia-repl">julia&gt; n = 8; dθ = 2π/(2n)
+0.39269908169872414
+
+julia&gt; θ = collect(0:dθ:2π-dθ)
+16-element Array{Float64,1}:
+ 0.0
+ 0.392699
+ 0.785398
+ 1.1781
+ 1.5708
+ 1.9635
+ 2.35619
+ 2.74889
+ 3.14159
+ 3.53429
+ 3.92699
+ 4.31969
+ 4.71239
+ 5.10509
+ 5.49779
+ 5.89049
+
+julia&gt; w = (1+0.3cos.(n*θ)).*exp.(im*θ)
+16-element Array{Complex{Float64},1}:
+          1.3+0.0im
+     0.646716+0.267878im
+     0.919239+0.919239im
+     0.267878+0.646716im
+   7.9602e-17+1.3im
+    -0.267878+0.646716im
+    -0.919239+0.919239im
+    -0.646716+0.267878im
+         -1.3+1.59204e-16im
+    -0.646716-0.267878im
+    -0.919239-0.919239im
+    -0.267878-0.646716im
+ -2.38806e-16-1.3im
+     0.267878-0.646716im
+     0.919239-0.919239im
+     0.646716-0.267878im
+
+julia&gt; p = Polygon(w)
+Polygon with 16 vertices at
+             (1.3,0.0) (0.6467156727579007,0.26787840265556284) (0.9192388155425119,0.9192388155425117) (0.26787840265556284,0.6467156727579007) (7.960204194457797e-17,1.3) (-0.2678784026555628,0.6467156727579007) (-0.9192388155425117,0.9192388155425119) (-0.6467156727579007,0.2678784026555629) (-1.3,1.5920408388915593e-16) (-0.6467156727579008,-0.26787840265556273) (-0.919238815542512,-0.9192388155425117) (-0.26787840265556323,-0.6467156727579005) (-2.3880612583373386e-16,-1.3) (0.267878402655563,-0.6467156727579007) (0.9192388155425116,-0.919238815542512) (0.6467156727579005,-0.26787840265556323)
+             interior angles/π = [0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502]
+
+julia&gt; plot(p)</code></pre><p><img src="polygon8.svg" alt/></p><p>Construct the map and plot it</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
+Schwarz-Christoffel map of unit circle to exterior of polygon with 16 vertices
+
+julia&gt; conformal_grid(m)</code></pre><p><img src="polygongrid8.svg" alt/></p><footer><hr/><a class="previous" href="index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="polygons.html"><span class="direction">Next</span><span class="title">Polygons</span></a></footer></article></body></html>
