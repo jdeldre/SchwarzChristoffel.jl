@@ -1,146 +1,8 @@
-using NLsolve
-
-using DifferentialEquations
-
-#= functions for the power series exterior map from unit disk =#
-
-struct PowerSeries{N,T}
-  ccoeff :: Vector{T}
-  dcoeff :: Vector{T}
-end
-
-function PowerSeries(ccoeff::Vector{T},dcoeff::Vector{T}) where T
-  ncoeff = length(ccoeff)-2
-  PowerSeries{ncoeff,T}(ccoeff,dcoeff)
-end
-
-function Base.show(io::IO,ps::PowerSeries{N,T}) where {N,T}
-  println(io, "multipole coefficients:")
-  println(io, "  c₁ = $(ps.ccoeff[1]), ")
-  println(io, "  c₀ = $(ps.ccoeff[2]), ")
-  print(io,   "  c₋ᵢ = ")
-  for i = 1:N
-    print(io,"$(ps.ccoeff[2+i]), ")
-  end
-  println(io, "i = 1:$(N)")
-end
-
-function (ps::PowerSeries)(ζ::T) where T<:Number
-  ζⁿ = ζ
-  z = zero(ζ)
-  for c in ps.ccoeff
-    z += c*ζⁿ
-    ζⁿ /= ζ
-  end
-  return z
-end
-
-(ps::PowerSeries)(ζ::Vector{T}) where T<:Number = ps.(ζ)
-
-struct PowerSeriesDerivatives
-  ps :: PowerSeries
-end
-
-function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
-  C = dps.ps.ccoeff
-  dz = C[1]
-  ζⁿ = 1/ζ^2
-  ddz = Complex128(0)
-  for n in 1:length(C)-2
-    dz -= n*C[n+2]*ζⁿ
-    ζⁿ /= ζ
-    ddz += n*(n+1)*C[n+2]*ζⁿ
-  end
-  return dz, ddz
-end
-
-function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
-  dz = zeros(ζs)
-  ddz = zeros(ζs)
-  for (i,ζ) in enumerate(ζs)
-    dz[i], ddz[i] = dps(ζ)
-  end
-  return dz, ddz
-end
-
-function evalinv_exterior(z::Vector{Complex128},ps::PowerSeries,
-                                dps::PowerSeriesDerivatives)
-
-   zeta = zeros(Complex128,size(z))
-   lenz = length(z)
-   zeta0 = []
-   maxiter = 10
-   tol = 1.0e-8
-
-   # Find z values close to vertices and set zeta to the corresponding
-   # prevertices
-   done = zeros(Bool,size(z))
-
-   # Now, for remaining z values, first try to integrate
-   #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
-   # with the initial condition ζ(0) = ζ₀.
-   if isempty(zeta0)
-     # choose a point on the unit circle
-     zeta0 = exp.(im*zeros(lenz))
-     zeta0[isapprox.(angle.(z),π;atol=eps())] = exp(im*π)
-     dz0,ddz0 = dps(zeta0)
-     # check for starting points on edges of the body, and rotate them
-     # a bit if so
-     onedge = isapprox.(abs.(dps(zeta0)[1]),0.0;atol=eps())
-     zeta0[onedge] .*= exp(im*π/20)
-     z0 = ps(zeta0)
-   else
-     z0 = ps(zeta0)
-     if length(zeta0)==1 && lenz > 1
-       zeta0 = zeta0[:,ones(Int,lenz)].'
-       z0 = z0[:,ones(Int,lenz)].'
-     end
-     z0 = z0[.~done]
-     zeta0 = zeta0[.~done]
-   end
-   odetol = max(tol,1e-3)
-   scale = z[.~done] - z0
-
-   zeta0 = [real(zeta0);imag(zeta0)]
-
-   f(zeta,p,t) = invfunc(zeta,scale,dps)
-   tspan = (0.0,1.0)
-   prob = ODEProblem(f,zeta0,tspan)
-   sol = solve(prob,Tsit5(),reltol=1e-8,abstol=1e-8)
-   lenu = length(zeta0)
-   zeta[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
-   out = abs.(zeta) .> 1
-   zeta[out] = sign.(zeta[out])
-
-   # Now use Newton iterations to improve the solution
-   zetan = zeta
-   k = 0
-   while ~all(done) && k < maxiter
-     F = z[.~done] - ps(zetan[.~done])
-     M = length(F)
-     dF, ddz = dps(zetan[.~done])
-     zetan[.~done] = zetan[.~done] + F./dF
-
-     done[.~done] = abs.(F).< tol
-     k += 1
-   end
-   F = z[.~done] - ps(zetan[.~done])
-   if any(abs.(F).> tol)
-     error("Check solution")
-   end
-   zeta = zetan
-
-end
-
-function invfunc(u,scale,dps::PowerSeriesDerivatives)
-    lenu = length(u)
-    lenzp = Int(lenu/2)
-    zeta = u[1:lenzp]+im*u[lenzp+1:lenu]
-
-    dz, ddz = dps(zeta)
-    f = scale./dz
-    zdot = [real(f);imag(f)]
-end
+#=
+Many of the base level routines here are adapted from the SC Toolbox by Toby Driscoll
+and are inspired from the work of L. Trefethen, "Numerical Computation of the
+Schwarz-Christoffel Transformation", STAN-CS-79-710, 1979.
+=#
 
 
 #= functions for the Schwarz-Christoffel exterior map from unit disk =#
@@ -148,8 +10,13 @@ end
 function param(w::Vector{Complex128},beta::Vector{Float64},
                  zeta0::Vector{Complex128},
                  qdat::Tuple{Array{Float64,2},Array{Float64,2}})
-  # w clockwise
-  # beta turning angles
+#=
+Solve for the parameters of the exterior Schwarz-Christoffel mapping: the
+prevertices `zeta` and the constant factor `c`. The routine requires the
+vertices `w` in clockwise order, the exterior turning angles `beta`,
+a list of guesses for the prevertices `zeta0` (which can be blank), and
+the Gauss-Jacobi quadrature data in `qdat`
+=#
 
   n = length(w)
   if n == 2
@@ -190,8 +57,14 @@ end
 function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
                   beta::Vector{Float64},prev::Vector{Complex128},
                   c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
-
-  # this assumes zeta inside the unit circle
+  #=
+  Evaluates the exterior Schwarz-Christoffel mapping at `zeta`, which is
+  presumed to be inside the unit circle. The vector `w` are the vertices (in
+  clockwise order), `beta` are the exterior turning angles (also in clockwise order),
+  `prev` are the prevertices on the unit circle, and `c` is the constant factor
+  of the transformation. The tuple `qdat` contains the Gauss-Jacobi nodes and
+  weights.
+  =#
 
   if isempty(zeta)
     nothing
@@ -265,6 +138,13 @@ end
 function evalderiv_exterior(zeta::Vector{Complex128},beta::Vector{Float64},
                   prev::Vector{Complex128},c::Complex128)
 
+#=
+Evaluates the first and second derivative of the exterior Schwarz-Christoffel
+mapping at `zeta`, which is
+presumed to be inside the unit circle. The vector `beta` are the exterior turning
+angles (also in clockwise order), `prev` are the prevertices on the unit circle, and
+`c` is the constant factor of the transformation.
+=#
     n = length(prev)
     neval = length(zeta)
     beta = [beta;-2]
@@ -280,6 +160,10 @@ function evalinv_exterior(z::Vector{Complex128},w::Vector{Complex128},
                   beta::Vector{Float64},prev::Vector{Complex128},
                   c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
+#=
+Evaluates the inverse of the exterior Schwarz-Christoffel mapping, using a combination
+of integration and Newton iteration, using techniques from Trefethen (1979).
+=#
 
    n = length(w)
    zeta = zeros(Complex128,size(z))
@@ -556,6 +440,12 @@ end
 
 function (I::DabsQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
                         sing1::Vector{Int64},zeta::Vector{Complex128}) where {T,N,NQ}
+#=
+This integrates |z'(λ)| from `zeta1` to `zeta2` on the unit circle, using
+Gauss-Jacobi quadrature, where
+`sing1` contains the index of the prevertex in `zeta` that `zeta1` corresponds
+to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
+=#
 
    (qnode,qwght) = I.qdat
 
@@ -618,9 +508,14 @@ end
 function (I::DabsQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
                         sing1::Vector{Int64},zeta::Vector{Complex128},pow::Int) where {T,N,NQ}
 
-   (qnode,qwght) = I.qdat
+#=
+This integrates λ⁻ᵏz'(λ) (where k is `pow`) from `zeta1` to `zeta2` on the unit circle,
+using Gauss-Jacobi quadrature, where
+`sing1` contains the index of the prevertex in `zeta` that `zeta1` corresponds
+to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
+=#
 
-   beta = [I.beta;pow]
+   (qnode,qwght) = I.qdat
 
    argz = angle.(zeta)
 
@@ -703,11 +598,18 @@ end
 
 
 function (I::DQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
-          sing1::Vector{Int64},zeta::Vector{Complex128};pow::Int=-2) where {T,N,NQ}
+          sing1::Vector{Int64},zeta::Vector{Complex128};pow::Int=0) where {T,N,NQ}
+#=
+This integrates z'(λ) from `zeta1` to `zeta2` on a straight path in the circle
+plane, where `sing1` contains the index of the prevertex in `zeta` that `zeta1` corresponds
+to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
+If the optional argument `pow` is included, then it integrates λ⁻ᵏz'(λ), where
+k = `pow`.
+=#
 
    (qnode,qwght) = I.qdat
 
-   beta = [I.beta;pow]
+   beta = [I.beta;-2+pow]
 
    bigzeta = transpose(zeta[:,ones(Int,NQ)])
 
@@ -723,6 +625,8 @@ function (I::DQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
      zetas = vcat(zeta[1:sing1k-1],zeta[sing1k+1:end])
      dist = min(1,2*minimum(abs.(zetas-z1k))/abs(z2k-z1k))
      zetar = z1k + dist*(z2k-z1k)
+     # Choose which type of Gauss-Jacobi weights to use based on whether
+     # z1k is a prevertex.
      ind = sing1k + (N+1)*(sing1k==0)
 
      nd = 0.5*((zetar-z1k)*qnode[:,ind] + zetar + z1k)
@@ -730,6 +634,8 @@ function (I::DQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
      terms = 1 .- nd[:,ones(Int,N)]./bigzeta
      if !any(terms==0.0)
        terms = hcat(terms,nd)
+        # If z1k is a prevertex, adjust the integrand so that it is properly
+        # set up for the Gauss-Jacobi integration
         if sing1k > 0
             terms[:,sing1k] ./= abs.(terms[:,sing1k])
             wt .*= (0.5*abs.(zetar-z1k)).^beta[sing1k]

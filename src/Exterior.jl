@@ -1,6 +1,7 @@
 module Exterior
 
 using NLsolve
+using DifferentialEquations
 
 using ..Properties
 using ..Polygons
@@ -15,7 +16,8 @@ export PowerSeries,PowerSeriesDerivatives,PowerMap,ExteriorMap,
         summary,parameters,coefficients,
         moments,area,centroid,Jmoment,addedmass
 
-include("exterior/parameters.jl")
+include("exterior/powerseries.jl")
+include("exterior/polygon.jl")
 
 
 struct PowerMap <: ConformalMap
