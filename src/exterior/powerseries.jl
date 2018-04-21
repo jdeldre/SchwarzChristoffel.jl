@@ -66,78 +66,78 @@ Evaluates the inverse of the exterior power series mapping, using a combination
 of integration and Newton iteration.
 =#
 
-   zeta = zeros(Complex128,size(z))
+   ζ = zeros(Complex128,size(z))
    lenz = length(z)
-   zeta0 = []
+   ζ0 = []
    maxiter = 10
    tol = 1.0e-8
 
-   # Find z values close to vertices and set zeta to the corresponding
+   # Find z values close to vertices and set ζ to the corresponding
    # prevertices
    done = zeros(Bool,size(z))
 
    # Now, for remaining z values, first try to integrate
    #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
    # with the initial condition ζ(0) = ζ₀.
-   if isempty(zeta0)
+   if isempty(ζ0)
      # choose a point on the unit circle
-     zeta0 = exp.(im*zeros(lenz))
-     zeta0[isapprox.(angle.(z),π;atol=eps())] = exp(im*π)
-     dz0,ddz0 = dps(zeta0)
+     ζ0 = exp.(im*zeros(lenz))
+     ζ0[isapprox.(angle.(z),π;atol=eps())] = exp(im*π)
+     dz0,ddz0 = dps(ζ0)
      # check for starting points on edges of the body, and rotate them
      # a bit if so
-     onedge = isapprox.(abs.(dps(zeta0)[1]),0.0;atol=eps())
-     zeta0[onedge] .*= exp(im*π/20)
-     z0 = ps(zeta0)
+     onedge = isapprox.(abs.(dps(ζ0)[1]),0.0;atol=eps())
+     ζ0[onedge] .*= exp(im*π/20)
+     z0 = ps(ζ0)
    else
-     z0 = ps(zeta0)
-     if length(zeta0)==1 && lenz > 1
-       zeta0 = zeta0[:,ones(Int,lenz)].'
+     z0 = ps(ζ0)
+     if length(ζ0)==1 && lenz > 1
+       ζ0 = ζ0[:,ones(Int,lenz)].'
        z0 = z0[:,ones(Int,lenz)].'
      end
      z0 = z0[.~done]
-     zeta0 = zeta0[.~done]
+     ζ0 = ζ0[.~done]
    end
    odetol = max(tol,1e-3)
    scale = z[.~done] - z0
 
-   zeta0 = [real(zeta0);imag(zeta0)]
+   ζ0 = [real(ζ0);imag(ζ0)]
 
-   f(zeta,p,t) = invfunc(zeta,scale,dps)
+   f(ζ,p,t) = invfunc(ζ,scale,dps)
    tspan = (0.0,1.0)
-   prob = ODEProblem(f,zeta0,tspan)
+   prob = ODEProblem(f,ζ0,tspan)
    sol = solve(prob,Tsit5(),reltol=1e-8,abstol=1e-8)
-   lenu = length(zeta0)
-   zeta[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
-   out = abs.(zeta) .> 1
-   zeta[out] = sign.(zeta[out])
+   lenu = length(ζ0)
+   ζ[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+   out = abs.(ζ) .> 1
+   ζ[out] = sign.(ζ[out])
 
    # Now use Newton iterations to improve the solution
-   zetan = zeta
+   ζn = ζ
    k = 0
    while ~all(done) && k < maxiter
-     F = z[.~done] - ps(zetan[.~done])
+     F = z[.~done] - ps(ζn[.~done])
      M = length(F)
-     dF, ddz = dps(zetan[.~done])
-     zetan[.~done] = zetan[.~done] + F./dF
+     dF, ddz = dps(ζn[.~done])
+     ζn[.~done] = ζn[.~done] + F./dF
 
      done[.~done] = abs.(F).< tol
      k += 1
    end
-   F = z[.~done] - ps(zetan[.~done])
+   F = z[.~done] - ps(ζn[.~done])
    if any(abs.(F).> tol)
      error("Check solution")
    end
-   zeta = zetan
+   ζ = ζn
 
 end
 
 function invfunc(u,scale,dps::PowerSeriesDerivatives)
     lenu = length(u)
     lenzp = Int(lenu/2)
-    zeta = u[1:lenzp]+im*u[lenzp+1:lenu]
+    ζ = u[1:lenzp]+im*u[lenzp+1:lenu]
 
-    dz, ddz = dps(zeta)
+    dz, ddz = dps(ζ)
     f = scale./dz
     zdot = [real(f);imag(f)]
 end

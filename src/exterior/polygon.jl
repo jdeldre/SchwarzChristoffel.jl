@@ -6,84 +6,83 @@ Schwarz-Christoffel Transformation", STAN-CS-79-710, 1979.
 
 
 #= functions for the Schwarz-Christoffel exterior map from unit disk =#
-
-function param(w::Vector{Complex128},beta::Vector{Float64},
-                 zeta0::Vector{Complex128},
+function param(w::Vector{Complex128},β::Vector{Float64},
+                 ζ0::Vector{Complex128},
                  qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 #=
 Solve for the parameters of the exterior Schwarz-Christoffel mapping: the
-prevertices `zeta` and the constant factor `c`. The routine requires the
-vertices `w` in clockwise order, the exterior turning angles `beta`,
-a list of guesses for the prevertices `zeta0` (which can be blank), and
+prevertices `ζ` and the constant factor `c`. The routine requires the
+vertices `w` in clockwise order, the exterior turning angles `β`,
+a list of guesses for the prevertices `ζ0` (which can be blank), and
 the Gauss-Jacobi quadrature data in `qdat`
 =#
 
   n = length(w)
   if n == 2
-    zeta = Complex128[-1,1]
+    ζ = Complex128[-1,1]
   else
     len = abs.(diff(circshift(w,1)))
     nmlen = abs.(len[3:n-1]/len[2])
-    if isempty(zeta0)
+    if isempty(ζ0)
       y0 = zeros(n-1)
     else
-      zeta0 = zeta0/zeta0[n]
-      θ = angle.(zeta0)
+      ζ0 = ζ0/ζ0[n]
+      θ = angle.(ζ0)
       θ[θ.<=0] = θ[θ.<=0] + 2π
       dt = diff([0;θ[1:n-1];2π])
       @. y0 = log(dt[1:n-1]/dt[2:n])
     end
 
-    depfun! = Depfun(beta,nmlen,qdat)
+    depfun! = Depfun(β,nmlen,qdat)
 
     F0 = similar(y0)
     df = OnceDifferentiable(depfun!, y0, F0)
     sol = nlsolve(df,y0,show_trace = :false)
 
-    zeta = zeros(Complex128,n)
+    ζ = zeros(Complex128,n)
     θ = zeros(n-1)
-    y_to_zeta!(zeta,θ,sol.zero)
+    y_to_ζ!(ζ,θ,sol.zero)
 
   end
 
-  mid = zeta[1]*exp(0.5*im*angle(zeta[2]/zeta[1]))
-  dequad = DQuad(beta,qdat)
-  c = (w[2]-w[1])/(dequad([zeta[1]],[mid],[1],zeta)[1]-dequad([zeta[2]],[mid],[2],zeta)[1])
+  mid = ζ[1]*exp(0.5*im*angle(ζ[2]/ζ[1]))
+  dequad = DQuad(β,qdat)
+  c = (w[2]-w[1])/(dequad([ζ[1]],[mid],[1],ζ)[1]-dequad([ζ[2]],[mid],[2],ζ)[1])
 
-  return zeta, c
+  return ζ, c
 
 end
 
-function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
-                  beta::Vector{Float64},prev::Vector{Complex128},
+function evaluate_exterior(ζ::Vector{Complex128},w::Vector{Complex128},
+                  β::Vector{Float64},prev::Vector{Complex128},
                   c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
   #=
-  Evaluates the exterior Schwarz-Christoffel mapping at `zeta`, which is
+  Evaluates the exterior Schwarz-Christoffel mapping at `ζ`, which is
   presumed to be inside the unit circle. The vector `w` are the vertices (in
-  clockwise order), `beta` are the exterior turning angles (also in clockwise order),
+  clockwise order), `β` are the exterior turning angles (also in clockwise order),
   `prev` are the prevertices on the unit circle, and `c` is the constant factor
   of the transformation. The tuple `qdat` contains the Gauss-Jacobi nodes and
   weights.
   =#
 
-  if isempty(zeta)
+  if isempty(ζ)
     nothing
   end
 
   n = length(w)
-  neval = length(zeta)
+  neval = length(ζ)
   tol = 10.0^(-size(qdat[1],1))
 
   # set up the integrator
-  dequad = DQuad(beta,qdat)
+  dequad = DQuad(β,qdat)
 
   # initialize the mapped evaluation points
   z = zeros(Complex128,neval)
 
   # find the closest prevertices to each evaluation point and their
   #  corresponding distances
-  dz = abs.(zeta[:,ones(Int,n)]-prev[:,ones(Int,neval)].')
-  #dz = abs.(hcat([zeta for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
+  dz = abs.(ζ[:,ones(Int,n)]-prev[:,ones(Int,neval)].')
+  #dz = abs.(hcat([ζ for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
   (dist,ind) = findmin(dz,2)
   sing = floor.(Int,(ind[:]-1)/neval)+1
 
@@ -91,7 +90,7 @@ function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
   #  the corresponding vertices. The origin is also a singular point
   vertex = (dist[:] .< tol)
   z[vertex] = w[sing[vertex]]
-  zerop = abs.(zeta) .< tol
+  zerop = abs.(ζ) .< tol
   z[zerop] = Inf
   vertex = vertex .| zerop
 
@@ -102,29 +101,29 @@ function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
   z[.!vertex] = w[sing[.!vertex]]
 
   # distance to singularity at the origin
-  abszeta = abs.(zeta)
+  absζ = abs.(ζ)
 
   # unfinished cases
   unf = .!vertex
 
   # set the integration starting points
-  zetaold = copy(prevs)
-  zetanew = copy(zetaold)
+  ζold = copy(prevs)
+  ζnew = copy(ζold)
   dist = ones(neval)
   while any(unf)
     # distance to integrate still
-    dist[unf] = min.(1,2*abszeta[unf]./abs.(zeta[unf]-zetaold[unf]))
+    dist[unf] = min.(1,2*absζ[unf]./abs.(ζ[unf]-ζold[unf]))
 
     # new integration end point
-    zetanew[unf] = zetaold[unf] + dist[unf].*(zeta[unf]-zetaold[unf])
+    ζnew[unf] = ζold[unf] + dist[unf].*(ζ[unf]-ζold[unf])
 
     # integrate
-    z[unf] = z[unf] + c*dequad(zetaold[unf],zetanew[unf],sing[unf],prev)
+    z[unf] = z[unf] + c*dequad(ζold[unf],ζnew[unf],sing[unf],prev)
 
     # set new starting integration points for those that can be integrated
     #  further
     unf = dist .< 1
-    zetaold[unf] = zetanew[unf]
+    ζold[unf] = ζnew[unf]
 
     # only the first step can have a singularity
     sing .= 0
@@ -135,29 +134,29 @@ function evaluate_exterior(zeta::Vector{Complex128},w::Vector{Complex128},
 
 end
 
-function evalderiv_exterior(zeta::Vector{Complex128},beta::Vector{Float64},
+function evalderiv_exterior(ζ::Vector{Complex128},β::Vector{Float64},
                   prev::Vector{Complex128},c::Complex128)
 
 #=
 Evaluates the first and second derivative of the exterior Schwarz-Christoffel
-mapping at `zeta`, which is
-presumed to be inside the unit circle. The vector `beta` are the exterior turning
+mapping at `ζ`, which is
+presumed to be inside the unit circle. The vector `β` are the exterior turning
 angles (also in clockwise order), `prev` are the prevertices on the unit circle, and
 `c` is the constant factor of the transformation.
 =#
     n = length(prev)
-    neval = length(zeta)
-    beta = [beta;-2]
-    terms = [hcat([1 .- zeta/prev[i] for i = 1:n]...) zeta]
-    dz = c*exp.(log.(terms)*beta)
-    terms2 = [[-beta[i]/prev[i] for i = 1:n];beta[n+1]]
+    neval = length(ζ)
+    β = [β;-2]
+    terms = [hcat([1 .- ζ/prev[i] for i = 1:n]...) ζ]
+    dz = c*exp.(log.(terms)*β)
+    terms2 = [[-β[i]/prev[i] for i = 1:n];β[n+1]]
     ddz = dz.*((1.0./terms)*terms2)
     return dz, ddz
 
 end
 
 function evalinv_exterior(z::Vector{Complex128},w::Vector{Complex128},
-                  beta::Vector{Float64},prev::Vector{Complex128},
+                  β::Vector{Float64},prev::Vector{Complex128},
                   c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
 #=
@@ -166,97 +165,97 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
 =#
 
    n = length(w)
-   zeta = zeros(Complex128,size(z))
+   ζ = zeros(Complex128,size(z))
    lenz = length(z)
-   zeta0 = []
+   ζ0 = []
    maxiter = 10
    tol = 10.0^(-size(qdat[1],1))
 
-   # Find z values close to vertices and set zeta to the corresponding
+   # Find z values close to vertices and set ζ to the corresponding
    # prevertices
    done = zeros(Bool,size(z))
    for j = 1:n
      idx = find(abs.(z-w[j]) .< 3*eps())
-     zeta[idx] = prev[j]
+     ζ[idx] = prev[j]
      done[idx] = true
    end
    lenz -= sum(done)
    if lenz==0
-     return zeta
+     return ζ
    end
 
    # Now, for remaining z values, first try to integrate
    #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
    # with the initial condition ζ(0) = ζ₀.
-   if isempty(zeta0)
-     zeta0,z0 = initial_guess(z,w,beta,prev,c,qdat)
+   if isempty(ζ0)
+     ζ0,z0 = initial_guess(z,w,β,prev,c,qdat)
    else
-     z0 = evaluate_exterior(zeta0,w,beta,prev,c,qdat)
-     if length(zeta0)==1 && lenz > 1
-       zeta0 = zeta0[:,ones(Int,lenz)].'
+     z0 = evaluate_exterior(ζ0,w,β,prev,c,qdat)
+     if length(ζ0)==1 && lenz > 1
+       ζ0 = ζ0[:,ones(Int,lenz)].'
        z0 = z0[:,ones(Int,lenz)].'
      end
      z0 = z0[.~done]
-     zeta0 = zeta0[.~done]
+     ζ0 = ζ0[.~done]
    end
    odetol = max(tol,1e-3)
    scale = z[.~done] - z0
 
-   zeta0 = [real(zeta0);imag(zeta0)]
+   ζ0 = [real(ζ0);imag(ζ0)]
 
-   f(zeta,p,t) = invfunc(zeta,scale,beta,prev,c)
+   f(ζ,p,t) = invfunc(ζ,scale,β,prev,c)
    tspan = (0.0,1.0)
-   prob = ODEProblem(f,zeta0,tspan)
+   prob = ODEProblem(f,ζ0,tspan)
    sol = solve(prob,Tsit5(),reltol=1e-8,abstol=1e-8)
-   lenu = length(zeta0)
-   zeta[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
-   out = abs.(zeta) .> 1
-   zeta[out] = sign.(zeta[out])
+   lenu = length(ζ0)
+   ζ[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+   out = abs.(ζ) .> 1
+   ζ[out] = sign.(ζ[out])
 
    # Now use Newton iterations to improve the solution
-   zetan = zeta
+   ζn = ζ
    k = 0
    while ~all(done) && k < maxiter
-     F = z[.~done] - evaluate_exterior(zetan[.~done],w,beta,prev,c,qdat)
+     F = z[.~done] - evaluate_exterior(ζn[.~done],w,β,prev,c,qdat)
      M = length(F)
-     dF, ddz = evalderiv_exterior(zetan[.~done],beta,prev,c)
-     zetan[.~done] = zetan[.~done] + F./dF
+     dF, ddz = evalderiv_exterior(ζn[.~done],β,prev,c)
+     ζn[.~done] = ζn[.~done] + F./dF
 
      done[.~done] = abs.(F).< tol
      k += 1
    end
-   F = z[.~done] - evaluate_exterior(zetan[.~done],w,beta,prev,c,qdat)
+   F = z[.~done] - evaluate_exterior(ζn[.~done],w,β,prev,c,qdat)
    if any(abs.(F).> tol)
      error("Check solution")
    end
-   zeta = zetan
+   ζ = ζn
 
 end
 
 
-function invfunc(u,scale,beta::Vector{Float64},prev::Vector{Complex128},c::Complex128)
+function invfunc(u,scale,β::Vector{Float64},prev::Vector{Complex128},c::Complex128)
     lenu = length(u)
     lenzp = Int(lenu/2)
-    zeta = u[1:lenzp]+im*u[lenzp+1:lenu]
+    ζ = u[1:lenzp]+im*u[lenzp+1:lenu]
 
-    dz, ddz = evalderiv_exterior(zeta,beta,prev,c)
+    dz, ddz = evalderiv_exterior(ζ,β,prev,c)
     f = scale./dz
     zdot = [real(f);imag(f)]
 end
 
 function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
-                  beta::Vector{Float64},prev::Vector{Complex128},
+                  β::Vector{Float64},prev::Vector{Complex128},
                   c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
   n = length(w)
   tol = 1000.0*10.0^(-size(qdat[1])[1])
   shape = copy(z)
-  zeta0 = copy(z)
+  ζ0 = copy(z)
   z0 = copy(z)
   argz = angle.(prev);
   argz[argz.<=0] .+= 2π
 
-  argw = cumsum([angle(w[2]-w[1]); -π*beta[2:n]])
+  argw = cumsum([angle(w[2]-w[1]); -π*β[2:n]])
 
   infty = isinf.(w)
   fwd = circshift(1:n,-1)
@@ -274,18 +273,18 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
 
   A = zeros(Float64,2,2)
 
-  zetabase = NaN*ones(Complex128,n)
+  ζbase = NaN*ones(Complex128,n)
   zbase = NaN*ones(Complex128,n)
   idx = []
   while M > 0
     for j = 1:n
       if j<n
-        zetabase[j] = exp(im*(factor*argz[j] + (1-factor)*argz[j+1]))
+        ζbase[j] = exp(im*(factor*argz[j] + (1-factor)*argz[j+1]))
       else
-        zetabase[j] = exp(im*(factor*argz[n] + (1-factor)*(2π+argz[1])))
+        ζbase[j] = exp(im*(factor*argz[n] + (1-factor)*(2π+argz[1])))
       end
     end
-    zbase = evaluate_exterior(zetabase,w,beta,prev,c,qdat)
+    zbase = evaluate_exterior(ζbase,w,β,prev,c,qdat)
     proj = real.( (zbase-anchor) .* conj.(direcn) )
     zbase = anchor + proj.*direcn
     if isempty(idx)
@@ -296,7 +295,7 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
     else
       idx[.~done] = idx[.~done].%n + 1
     end
-    zeta0[.~done] = zetabase[idx[.~done]]
+    ζ0[.~done] = ζbase[idx[.~done]]
     z0[.~done] = zbase[idx[.~done]]
 
     for j = 1:n
@@ -320,7 +319,7 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
                   s = A\[real(dif);imag(dif)]
                   if s[1]>=0 && s[1]<=len[k]
                     if abs(s[2]-1) < tol
-                      zeta0[p] = zetabase[k]
+                      ζ0[p] = ζbase[k]
                       z0[p] = zbase[k]
                     elseif abs(s[2]) < tol
                       if real( conj(z[p]-z0[p])*im*direcn[k] ) > 0
@@ -348,7 +347,7 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
 
   end  # while M
 
-  return zeta0, z0
+  return ζ0, z0
 
 end
 
@@ -371,7 +370,7 @@ function getcoefflist(power,div,mom)
     I = madvance(I)
   end
 
-  # Find the coefficient for 1/zeta^(pow-1) in the fhat expansion
+  # Find the coefficient for 1/ζ^(pow-1) in the fhat expansion
   coeff = 0
   for j = 1:size(I,1)
     sumI = sum(I[j,:])
@@ -420,83 +419,83 @@ end
 #######
 
 struct DabsQuad{T,N,NQ}
-  beta :: Vector{T}
+  β :: Vector{T}
   qdat :: Tuple{Array{T,2},Array{T,2}}
 end
 
-function DabsQuad(beta::Vector{T},tol::T) where T
-  n = length(beta)
+function DabsQuad(β::Vector{T},tol::T) where T
+  n = length(β)
   nqpts = max(ceil(Int,-log10(tol)),2)
-  qdat = qdata(beta,nqpts)
-  DabsQuad{T,n,nqpts}(beta,qdat)
+  qdat = qdata(β,nqpts)
+  DabsQuad{T,n,nqpts}(β,qdat)
 end
 
-function DabsQuad(beta::Vector{T},
+function DabsQuad(β::Vector{T},
                   qdat::Tuple{Array{T,2},Array{T,2}}) where T
-  n = length(beta)
+  n = length(β)
   nqpts = size(qdat[1],1)
-  DabsQuad{T,n,nqpts}(beta,qdat)
+  DabsQuad{T,n,nqpts}(β,qdat)
 end
 
-function (I::DabsQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
-                        sing1::Vector{Int64},zeta::Vector{Complex128}) where {T,N,NQ}
+function (I::DabsQuad{T,N,NQ})(ζ1::Vector{Complex128},ζ2::Vector{Complex128},
+                        sing1::Vector{Int64},ζ::Vector{Complex128}) where {T,N,NQ}
 #=
-This integrates |z'(λ)| from `zeta1` to `zeta2` on the unit circle, using
+This integrates |z'(λ)| from `ζ1` to `ζ2` on the unit circle, using
 Gauss-Jacobi quadrature, where
-`sing1` contains the index of the prevertex in `zeta` that `zeta1` corresponds
-to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
+`sing1` contains the index of the prevertex in `ζ` that `ζ1` corresponds
+to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
 =#
 
    (qnode,qwght) = I.qdat
 
-   argz = angle.(zeta)
+   argz = angle.(ζ)
 
-   argz1 = angle.(zeta1)
-   argz2 = angle.(zeta2)
-   ang21 = angle.(zeta2./zeta1)
+   argζ1 = angle.(ζ1)
+   argζ2 = angle.(ζ2)
+   ang21 = angle.(ζ2./ζ1)
 
    bigargz = transpose(argz[:,ones(Int,NQ)])
 
-   discont = (argz2-argz1).*ang21 .< 0
-   argz2[discont] += 2π*sign.(ang21[discont])
+   discont = (argζ2-argζ1).*ang21 .< 0
+   argζ2[discont] += 2π*sign.(ang21[discont])
 
    if isempty(sing1)
-     sing1 = zeros(size(zeta1))
+     sing1 = zeros(size(ζ1))
    end
-   result = zeros(Float64,size(zeta1))
+   result = zeros(Float64,size(ζ1))
 
-   nontriv = find(zeta1.!=zeta2)
+   nontriv = find(ζ1.!=ζ2)
     #tic()
    for k in nontriv
-     z1k, z2k, arg1k, arg2k, sing1k =
-          zeta1[k], zeta2[k], argz1[k], argz2[k], sing1[k]
-     zetas = vcat(zeta[1:sing1k-1],zeta[sing1k+1:end])
-     dist = min(1,2*minimum(abs.(zetas-z1k))/abs(z2k-z1k))
+     ζ1k, ζ2k, arg1k, arg2k, sing1k =
+          ζ1[k], ζ2[k], argζ1[k], argζ2[k], sing1[k]
+     ζs = vcat(ζ[1:sing1k-1],ζ[sing1k+1:end])
+     dist = min(1,2*minimum(abs.(ζs-ζ1k))/abs(ζ2k-ζ1k))
      argr = arg1k + dist*(arg2k-arg1k)
      ind = ((sing1k+N) % (N+1)) + 1
-     nd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
+     ζnd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
      wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
-     θ = (nd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+     θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
      θ[θ.>π] = 2π-θ[θ.>π]
      terms = 2sin.(0.5θ)
      if !any(terms==0.0)
         if sing1k > 0
-            terms[:,sing1k] ./= abs.(nd-arg1k)
-            wt .*= (0.5*abs.(argr-arg1k)).^I.beta[sing1k]
+            terms[:,sing1k] ./= abs.(ζnd-arg1k)
+            wt .*= (0.5*abs.(argr-arg1k)).^I.β[sing1k]
         end
-        result[k] = At_mul_B(exp.(log.(terms)*I.beta),wt)
+        result[k] = At_mul_B(exp.(log.(terms)*I.β),wt)
         while dist < 1.0
             argl = argr
-            zetal = exp(im*argl)
-            dist = min(1,2*minimum(abs.(zeta-zetal)/abs(zetal-z2k)))
+            ζl = exp(im*argl)
+            dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
             argr = argl + dist*(arg2k-argl)
-            nd = 0.5*((argr-argl)*qnode[:,N+1] + argr + argl)
+            ζnd = 0.5*((argr-argl)*qnode[:,N+1] + argr + argl)
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
-            #θ = hcat([(nd - argz[i] + 2π).%(2π) for i = 1:N]...)
-            θ = (nd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+            #θ = hcat([(ζnd - argz[i] + 2π).%(2π) for i = 1:N]...)
+            θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
             θ[θ.>π] = 2π-θ[θ.>π]
             terms = 2sin.(0.5θ)
-            result[k] += At_mul_B(exp.(log.(terms)*I.beta),wt)
+            result[k] += At_mul_B(exp.(log.(terms)*I.β),wt)
         end
      end
    end
@@ -505,70 +504,70 @@ to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
    return result
 end
 
-function (I::DabsQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
-                        sing1::Vector{Int64},zeta::Vector{Complex128},pow::Int) where {T,N,NQ}
+function (I::DabsQuad{T,N,NQ})(ζ1::Vector{Complex128},ζ2::Vector{Complex128},
+                        sing1::Vector{Int64},ζ::Vector{Complex128},pow::Int) where {T,N,NQ}
 
 #=
-This integrates λ⁻ᵏz'(λ) (where k is `pow`) from `zeta1` to `zeta2` on the unit circle,
+This integrates λ⁻ᵏz'(λ) (where k is `pow`) from `ζ1` to `ζ2` on the unit circle,
 using Gauss-Jacobi quadrature, where
-`sing1` contains the index of the prevertex in `zeta` that `zeta1` corresponds
-to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
+`sing1` contains the index of the prevertex in `ζ` that `ζ1` corresponds
+to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
 =#
 
    (qnode,qwght) = I.qdat
 
-   argz = angle.(zeta)
+   argz = angle.(ζ)
 
-   argz1 = angle.(zeta1)
-   argz2 = angle.(zeta2)
-   ang21 = angle.(zeta2./zeta1)
+   argζ1 = angle.(ζ1)
+   argζ2 = angle.(ζ2)
+   ang21 = angle.(ζ2./ζ1)
 
    bigargz = transpose(argz[:,ones(Int,NQ)])
 
-   discont = (argz2-argz1).*ang21 .< 0
-   argz2[discont] += 2π*sign.(ang21[discont])
+   discont = (argζ2-argζ1).*ang21 .< 0
+   argζ2[discont] += 2π*sign.(ang21[discont])
 
    if isempty(sing1)
-     sing1 = zeros(size(zeta1))
+     sing1 = zeros(size(ζ1))
    end
-   result = zeros(Complex128,size(zeta1))
+   result = zeros(Complex128,size(ζ1))
 
-   nontriv = find(zeta1.!=zeta2)
+   nontriv = find(ζ1.!=ζ2)
     #tic()
    for k in nontriv
-     z1k, z2k, arg1k, arg2k, sing1k =
-          zeta1[k], zeta2[k], argz1[k], argz2[k], sing1[k]
-     zetas = vcat(zeta[1:sing1k-1],zeta[sing1k+1:end])
-     dist = min(1,2*minimum(abs.(zetas-z1k))/abs(z2k-z1k))
+     ζ1k, ζ2k, arg1k, arg2k, sing1k =
+          ζ1[k], ζ2[k], argζ1[k], argζ2[k], sing1[k]
+     ζs = vcat(ζ[1:sing1k-1],ζ[sing1k+1:end])
+     dist = min(1,2*minimum(abs.(ζs-ζ1k))/abs(ζ2k-ζ1k))
      argr = arg1k + dist*(arg2k-arg1k)
      ind = ((sing1k+N) % (N+1)) + 1
-     nd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
+     ζnd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
      wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
-     θ = (nd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+     θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
      #θ[θ.>π] = 2π-θ[θ.>π]
      #terms = 2sin.(0.5θ)
      terms = 1 .- exp.(im*θ)
      if !any(terms==0.0)
-        #terms = hcat(terms,exp.(im*nd))
+        #terms = hcat(terms,exp.(im*ζnd))
         if sing1k > 0
-            terms[:,sing1k] ./= abs.(nd-arg1k)
-            wt .*= (0.5*abs.(argr-arg1k)).^I.beta[sing1k]
+            terms[:,sing1k] ./= abs.(ζnd-arg1k)
+            wt .*= (0.5*abs.(argr-arg1k)).^I.β[sing1k]
         end
-        result[k] = At_mul_B(exp.(log.(terms)*I.beta+im*(pow-1)*nd),wt)
+        result[k] = At_mul_B(exp.(log.(terms)*I.β+im*(pow-1)*ζnd),wt)
         while dist < 1.0
             argl = argr
-            zetal = exp(im*argl)
-            dist = min(1,2*minimum(abs.(zeta-zetal)/abs(zetal-z2k)))
+            ζl = exp(im*argl)
+            dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
             argr = argl + dist*(arg2k-argl)
-            nd = 0.5*((argr-argl)*qnode[:,N+1] + argr + argl)
+            ζnd = 0.5*((argr-argl)*qnode[:,N+1] + argr + argl)
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
-            #θ = hcat([(nd - argz[i] + 2π).%(2π) for i = 1:N]...)
-            θ = (nd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+            #θ = hcat([(ζnd - argz[i] + 2π).%(2π) for i = 1:N]...)
+            θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
             #θ[θ.>π] = 2π-θ[θ.>π]
             #terms = 2sin.(0.5θ)
             terms = 1 .- exp.(im*θ)
-            #terms = hcat(terms,exp.(im*nd))
-            result[k] += At_mul_B(exp.(log.(terms)*I.beta+im*(pow-1)*nd),wt)
+            #terms = hcat(terms,exp.(im*ζnd))
+            result[k] += At_mul_B(exp.(log.(terms)*I.β+im*(pow-1)*ζnd),wt)
         end
      end
    end
@@ -578,79 +577,79 @@ to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
 end
 
 struct DQuad{T,N,NQ}
-  beta :: Vector{T}
+  β :: Vector{T}
   qdat :: Tuple{Array{T,2},Array{T,2}}
 end
 
-function DQuad(beta::Vector{T},tol::T) where T
-  n = length(beta)
+function DQuad(β::Vector{T},tol::T) where T
+  n = length(β)
   nqpts = max(ceil(Int,-log10(tol)),2)
-  qdat = qdata(beta,nqpts)
-  DQuad{T,n,nqpts}(beta,qdat)
+  qdat = qdata(β,nqpts)
+  DQuad{T,n,nqpts}(β,qdat)
 end
 
-function DQuad(beta::Vector{T},
+function DQuad(β::Vector{T},
                   qdat::Tuple{Array{T,2},Array{T,2}}) where T
-  n = length(beta)
+  n = length(β)
   nqpts = size(qdat[1],1)
-  DQuad{T,n,nqpts}(beta,qdat)
+  DQuad{T,n,nqpts}(β,qdat)
 end
 
 
-function (I::DQuad{T,N,NQ})(zeta1::Vector{Complex128},zeta2::Vector{Complex128},
-          sing1::Vector{Int64},zeta::Vector{Complex128};pow::Int=0) where {T,N,NQ}
+function (I::DQuad{T,N,NQ})(ζ1::Vector{Complex128},ζ2::Vector{Complex128},
+          sing1::Vector{Int64},ζ::Vector{Complex128};pow::Int=0) where {T,N,NQ}
 #=
-This integrates z'(λ) from `zeta1` to `zeta2` on a straight path in the circle
-plane, where `sing1` contains the index of the prevertex in `zeta` that `zeta1` corresponds
-to, or 0 if `zeta1` is not a prevertex. Note that `zeta2` cannot be a prevertex.
+This integrates z'(λ) from `ζ1` to `ζ2` on a straight path in the circle
+plane, where `sing1` contains the index of the prevertex in `ζ` that `ζ1` corresponds
+to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
 If the optional argument `pow` is included, then it integrates λ⁻ᵏz'(λ), where
 k = `pow`.
 =#
 
    (qnode,qwght) = I.qdat
 
-   beta = [I.beta;-2+pow]
+   β = [I.β;-2+pow]
 
-   bigzeta = transpose(zeta[:,ones(Int,NQ)])
+   bigζ = transpose(ζ[:,ones(Int,NQ)])
 
    if isempty(sing1)
-     sing1 = zeros(Int,size(zeta1))
+     sing1 = zeros(Int,size(ζ1))
    end
-   result = zeros(Complex128,size(zeta1))
+   result = zeros(Complex128,size(ζ1))
 
-   nontriv = find(zeta1.!=zeta2)
+   nontriv = find(ζ1.!=ζ2)
     #tic()
    for k in nontriv
-     z1k, z2k, sing1k = zeta1[k], zeta2[k], sing1[k]
-     zetas = vcat(zeta[1:sing1k-1],zeta[sing1k+1:end])
-     dist = min(1,2*minimum(abs.(zetas-z1k))/abs(z2k-z1k))
-     zetar = z1k + dist*(z2k-z1k)
+     ζ1k, ζ2k, sing1k = ζ1[k], ζ2[k], sing1[k]
+     ζs = vcat(ζ[1:sing1k-1],ζ[sing1k+1:end])
+     dist = min(1,2*minimum(abs.(ζs-ζ1k))/abs(ζ2k-ζ1k))
+     ζr = ζ1k + dist*(ζ2k-ζ1k)
      # Choose which type of Gauss-Jacobi weights to use based on whether
-     # z1k is a prevertex.
+     # ζ1k is a prevertex.
      ind = sing1k + (N+1)*(sing1k==0)
 
-     nd = 0.5*((zetar-z1k)*qnode[:,ind] + zetar + z1k)
-     wt = 0.5*(zetar-z1k)*qwght[:,ind]
-     terms = 1 .- nd[:,ones(Int,N)]./bigzeta
+     ζnd = 0.5*((ζr-ζ1k)*qnode[:,ind] + ζr + ζ1k)
+     wt = 0.5*(ζr-ζ1k)*qwght[:,ind]
+     terms = 1 .- ζnd[:,ones(Int,N)]./bigζ
      if !any(terms==0.0)
-       terms = hcat(terms,nd)
-        # If z1k is a prevertex, adjust the integrand so that it is properly
+       terms = hcat(terms,ζnd)
+        # If ζ1k is a prevertex, adjust the integrand so that it is properly
         # set up for the Gauss-Jacobi integration
         if sing1k > 0
             terms[:,sing1k] ./= abs.(terms[:,sing1k])
-            wt .*= (0.5*abs.(zetar-z1k)).^beta[sing1k]
+            wt .*= (0.5*abs.(ζr-ζ1k)).^β[sing1k]
         end
-        result[k] = At_mul_B(exp.(log.(terms)*beta),wt)
+        result[k] = At_mul_B(exp.(log.(terms)*β),wt)
 
         while dist < 1.0
-            zetal = zetar
-            dist = min(1,2*minimum(abs.(zeta-zetal)/abs(zetal-z2k)))
-            zetar = zetal + dist*(z2k-zetal)
-            nd = 0.5*((zetar-zetal)*qnode[:,N+1] + zetar + zetal)
-            wt = 0.5*(zetar-zetal)*qwght[:,N+1]
-            terms = 1 .- nd[:,ones(Int,N)]./bigzeta
-            terms = hcat(terms,nd)
-            result[k] += At_mul_B(exp.(log.(terms)*beta),wt)
+            ζl = ζr
+            dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
+            ζr = ζl + dist*(ζ2k-ζl)
+            ζnd = 0.5*((ζr-ζl)*qnode[:,N+1] + ζr + ζl)
+            wt = 0.5*(ζr-ζl)*qwght[:,N+1]
+            terms = 1 .- ζnd[:,ones(Int,N)]./bigζ
+            terms = hcat(terms,ζnd)
+            result[k] += At_mul_B(exp.(log.(terms)*β),wt)
         end
       end
     end
@@ -659,8 +658,8 @@ end
 
 
 struct Depfun{T,N,NQ}
-    zeta :: Vector{Complex{T}}
-    beta :: Vector{T}
+    ζ :: Vector{Complex{T}}
+    β :: Vector{T}
     nmlen :: Vector{T}
     qdat :: Tuple{Array{T,2},Array{T,2}}
     θ    :: Vector{T}
@@ -669,28 +668,28 @@ struct Depfun{T,N,NQ}
     dabsquad :: DabsQuad{T,N,NQ}
 end
 
-function Depfun(beta::Vector{T},nmlen::Vector{T},qdat:: Tuple{Array{T,2},Array{T,2}}) where T
+function Depfun(β::Vector{T},nmlen::Vector{T},qdat:: Tuple{Array{T,2},Array{T,2}}) where T
     # should compute nmlen in here
-    n = length(beta)
+    n = length(β)
     nqpts = size(qdat[1],1)
-    zeta = zeros(Complex128,n)
+    ζ = zeros(Complex128,n)
     θ = zeros(n-1)
     mid = zeros(Complex128,n-2)
     ints = zeros(Complex128,n-2)
-    dabsquad = DabsQuad(beta,qdat)
-    Depfun{T,n,nqpts}(zeta,beta,nmlen,qdat,θ,mid,ints,dabsquad)
+    dabsquad = DabsQuad(β,qdat)
+    Depfun{T,n,nqpts}(ζ,β,nmlen,qdat,θ,mid,ints,dabsquad)
 end
 
 function (R::Depfun{T,N,NQ})(F,y) where {T,N,NQ}
 
 
-  y_to_zeta!(R.zeta,R.θ,y)
+  y_to_ζ!(R.ζ,R.θ,y)
 
   @. R.mid = exp(im*0.5*(R.θ[1:N-2]+R.θ[2:N-1]))
 
   #tic()
-  R.ints .= R.dabsquad(R.zeta[1:N-2],R.mid,collect(1:N-2),R.zeta)
-  R.ints .+= R.dabsquad(R.zeta[2:N-1],R.mid,collect(2:N-1),R.zeta)
+  R.ints .= R.dabsquad(R.ζ[1:N-2],R.mid,collect(1:N-2),R.ζ)
+  R.ints .+= R.dabsquad(R.ζ[2:N-1],R.mid,collect(2:N-1),R.ζ)
 
   #toc()
 
@@ -698,19 +697,19 @@ function (R::Depfun{T,N,NQ})(F,y) where {T,N,NQ}
     @. F[1:N-3] = abs(R.ints[2:N-2])/abs(R.ints[1]) - R.nmlen
   end
 
-  res = -sum(R.beta./R.zeta)/R.ints[1]
+  res = -sum(R.β./R.ζ)/R.ints[1]
   @. F[N-2] = real(res)
   @. F[N-1] = imag(res)
 end
 
 
-function y_to_zeta!(zeta::Vector{Complex{T}},
+function y_to_ζ!(ζ::Vector{Complex{T}},
                     θ::Vector{T},y::Vector{T}) where T
 
   cs = cumsum(cumprod([1;exp.(-y)]))
   n = length(cs)
   @. θ = 2π*cs[1:n-1]/cs[n]
-  zeta[n] = 1.0
-  @. zeta[1:n-1] = exp(im*θ)
+  ζ[n] = 1.0
+  @. ζ[1:n-1] = exp(im*θ)
 
 end
