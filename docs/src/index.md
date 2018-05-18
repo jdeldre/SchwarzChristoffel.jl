@@ -10,10 +10,14 @@ The purpose of this package is to enable easy construction and evaluation of the
 A polygon could be a simple shape, of course, like a square, with only a few vertices:
 ```@setup mapnaca
 using SchwarzChristoffel
+using Plots
+pyplot()
+clibrary(:colorbrewer)
+default(grid = false)
 p = Polygon([-0.5,0.5,0.5,-0.5],[-0.5,-0.5,0.5,0.5])
 m = ExteriorMap(p)
-conformal_grid(m)
-savefig("square.svg",format="svg")
+plot(m)
+savefig("square.svg")
 ```
 ![](square.svg)
 
@@ -23,8 +27,8 @@ using SchwarzChristoffel
 w = naca4(0.04,0.4,0.12;len=1)
 p = Polygon(w)
 m = ExteriorMap(p)
-conformal_grid(m)
-savefig("naca4412.svg",format="svg")
+plot(m)
+savefig("naca4412.svg")
 ```
 ![](naca4412.svg)
 

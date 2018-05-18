@@ -8,8 +8,7 @@ makedocs(
         "Basic Usage" => "usage.md",
         "Reference" => [
                    "polygons.md",
-                   "exterior.md",
-                   "plotting.md"
+                   "exterior.md"
                    ]
     ],
     assets = ["assets/custom.css"],

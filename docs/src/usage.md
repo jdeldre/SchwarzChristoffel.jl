@@ -8,6 +8,10 @@ end
 
 ```@setup mapconstruct
 using SchwarzChristoffel
+using Plots
+pyplot()
+clibrary(:colorbrewer)
+default(grid = false)
 ```
 
 First, we create a polygon shape by specifying its vertices. Note that the vertices must be provided in counter-clockwise order.
@@ -20,7 +24,7 @@ p = Polygon(x,y)
 Let's plot the polygon to make sure it matches what we wanted.
 ```@repl mapconstruct
 plot(p)
-savefig("polygon4.svg",format="svg"); nothing # hide
+savefig("polygon4.svg")
 ```
 
 ![](polygon4.svg)
@@ -35,8 +39,8 @@ Let's visualize what we've constructed. Here, we will inspect the
 mapping from the exterior of the unit circle to the exterior of the polygon.
 
 ```@repl mapconstruct
-conformal_grid(m)
-savefig("polygongrid.svg",format="svg"); nothing # hide
+plot(m)
+savefig("polygongrid.svg"); nothing # hide
 ```
 ![](polygongrid.svg)
 
@@ -64,6 +68,10 @@ dz
 ```
 ```@setup mapconstruct2
 using SchwarzChristoffel
+using Plots
+pyplot()
+clibrary(:colorbrewer)
+default(grid = false)
 ```
 
 Now let's try a more interesting shape. Here's a star-shaped body
@@ -73,7 +81,7 @@ n = 8; dθ = 2π/(2n)
 w = (1+0.3cos.(n*θ)).*exp.(im*θ)
 p = Polygon(w)
 plot(p)
-savefig("polygon8.svg",format="svg"); nothing # hide
+savefig("polygon8.svg"); nothing # hide
 ```
 ![](polygon8.svg)
 
@@ -81,7 +89,7 @@ savefig("polygon8.svg",format="svg"); nothing # hide
 Construct the map and plot it
 ```@repl mapconstruct2
 m = ExteriorMap(p)
-conformal_grid(m)
-savefig("polygongrid8.svg",format="svg"); nothing # hide
+plot(m)
+savefig("polygongrid8.svg"); nothing # hide
 ```
 ![](polygongrid8.svg)
