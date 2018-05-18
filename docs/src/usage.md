@@ -6,15 +6,14 @@ srand(1)
 end
 ```
 
-```@setup mapconstruct
+Let's first initiate the module. We'll also initiate plotting with [Plots.jl](http://docs.juliaplots.org/latest/), using PyPlot as the backend for the actual output.
+```@repl mapconstruct
 using SchwarzChristoffel
 using Plots
 pyplot()
-clibrary(:colorbrewer)
-default(grid = false)
 ```
 
-First, we create a polygon shape by specifying its vertices. Note that the vertices must be provided in counter-clockwise order.
+Now, we create a polygon shape by specifying its vertices. Note that the vertices must be provided in counter-clockwise order.
 
 ```@repl mapconstruct
 x = [-1.0,0.2,1.0,-1.0]; y = [-1.0,-1.0,0.5,1.0];
@@ -24,7 +23,7 @@ p = Polygon(x,y)
 Let's plot the polygon to make sure it matches what we wanted.
 ```@repl mapconstruct
 plot(p)
-savefig("polygon4.svg")
+savefig("polygon4.svg"); nothing # hide
 ```
 
 ![](polygon4.svg)

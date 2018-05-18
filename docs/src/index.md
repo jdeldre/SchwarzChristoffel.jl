@@ -21,7 +21,8 @@ savefig("square.svg")
 ```
 ![](square.svg)
 
-or it could be a more complicated shape, like a NACA 4412 airfoil:
+or it could be a more complicated shape, like a NACA 4412 airfoil (assembled with
+  line segments between a finite number of points on its shape):
 ```@setup mapnaca
 using SchwarzChristoffel
 w = naca4(0.04,0.4,0.12;len=1)
@@ -32,21 +33,19 @@ savefig("naca4412.svg")
 ```
 ![](naca4412.svg)
 
+The engine for constructing the mapping and its inverse is based on the work of Driscoll and Trefethen, [Schwarz-Christoffel Mapping](http://www.math.udel.edu/~driscoll/research/conformal.html), Cambridge University Press, 2002.
+
 ## Installation
 
 This package requires Julia `0.6-` and above.
-It is not a registered package, so it should be installed with:
+It is a registered package, so it should be installed with:
 ```julia
-julia> Pkg.clone("git@github.com:jdeldre/SchwarzChristoffel.jl.git")
+julia> Pkg.add("SchwarzChristoffel")
 ```
-Since it is still under heavy development, you should run
-```julia
-julia> Pkg.test("SchwarzChristoffel") # might take some time
-```
-to make sure things are working as intended and
+Since it is still under development, you should run
 ```julia
 julia> Pkg.update()
 ```
 to get the most recent version of the library and its dependencies.
 
-Examples can be found in the [documentation](https://jdeldre.github.io/SchwarzChristoffel.jl) and the [Jupyter notebooks](https://github.com/jdeldre/SchwarzChristoffel.jl/tree/master/examples).
+Examples can be found in the [documentation](https://jdeldre.github.io/SchwarzChristoffel.jl).
