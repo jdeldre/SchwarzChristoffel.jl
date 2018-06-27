@@ -10,8 +10,10 @@ Plots.PyPlotBackend()</code></pre><p>Now, we create a polygon shape by specifyin
 julia&gt; p = Polygon(x,y)
 Polygon with 4 vertices at
              (-1.0,-1.0) (0.2,-1.0) (1.0,0.5) (-1.0,1.0)
-             interior angles/π = [0.5, 0.656, 0.422, 0.422]</code></pre><p>Let&#39;s plot the polygon to make sure it matches what we wanted.</p><pre><code class="language-julia-repl">julia&gt; plot(p)</code></pre><p><img src="polygon4.svg" alt/></p><p>Now, we create the map from the unit circle to the polygon.</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
-Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices</code></pre><p>Let&#39;s visualize what we&#39;ve constructed. Here, we will inspect the mapping from the exterior of the unit circle to the exterior of the polygon.</p><pre><code class="language-julia-repl">julia&gt; plot(m)</code></pre><p><img src="polygongrid.svg" alt/></p><p>We can now easily evaluate the map at any place we like. It could be evaluated outside the unit circle:</p><pre><code class="language-julia-repl">julia&gt; ζ = 1.2 + 0.1im
+             interior angles/π = [0.5, 0.656, 0.422, 0.422]</code></pre><p>Let&#39;s plot the polygon to make sure it matches what we wanted.</p><pre><code class="language-julia-repl">julia&gt; plot(p)
+Plot{Plots.PyPlotBackend() n=1}</code></pre><p><img src="polygon4.svg" alt/></p><p>Now, we create the map from the unit circle to the polygon.</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
+Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices</code></pre><p>Let&#39;s visualize what we&#39;ve constructed. Here, we will inspect the mapping from the exterior of the unit circle to the exterior of the polygon.</p><pre><code class="language-julia-repl">julia&gt; plot(m)
+Plot{Plots.PyPlotBackend() n=60}</code></pre><p><img src="polygongrid.svg" alt/></p><p>We can now easily evaluate the map at any place we like. It could be evaluated outside the unit circle:</p><pre><code class="language-julia-repl">julia&gt; ζ = 1.2 + 0.1im
 1.2 + 0.1im
 
 julia&gt; m(ζ)
@@ -94,7 +96,9 @@ Polygon with 16 vertices at
              (1.3,0.0) (0.6467156727579007,0.26787840265556284) (0.9192388155425119,0.9192388155425117) (0.26787840265556284,0.6467156727579007) (7.960204194457797e-17,1.3) (-0.2678784026555628,0.6467156727579007) (-0.9192388155425117,0.9192388155425119) (-0.6467156727579007,0.2678784026555629) (-1.3,1.5920408388915593e-16) (-0.6467156727579008,-0.26787840265556273) (-0.919238815542512,-0.9192388155425117) (-0.26787840265556323,-0.6467156727579005) (-2.3880612583373386e-16,-1.3) (0.267878402655563,-0.6467156727579007) (0.9192388155425116,-0.919238815542512) (0.6467156727579005,-0.26787840265556323)
              interior angles/π = [0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502, 0.248, 1.502]
 
-julia&gt; plot(p)</code></pre><p><img src="polygon8.svg" alt/></p><p>Construct the map and plot it</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
+julia&gt; plot(p)
+Plot{Plots.PyPlotBackend() n=1}</code></pre><p><img src="polygon8.svg" alt/></p><p>Construct the map and plot it</p><pre><code class="language-julia-repl">julia&gt; m = ExteriorMap(p)
 Schwarz-Christoffel map of unit circle to exterior of polygon with 16 vertices
 
-julia&gt; plot(m)</code></pre><p><img src="polygongrid8.svg" alt/></p><footer><hr/><a class="previous" href="index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="polygons.html"><span class="direction">Next</span><span class="title">Polygons</span></a></footer></article></body></html>
+julia&gt; plot(m)
+Plot{Plots.PyPlotBackend() n=60}</code></pre><p><img src="polygongrid8.svg" alt/></p><footer><hr/><a class="previous" href="index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="polygons.html"><span class="direction">Next</span><span class="title">Polygons</span></a></footer></article></body></html>
