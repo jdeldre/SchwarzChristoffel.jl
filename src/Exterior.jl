@@ -2,6 +2,7 @@ module Exterior
 
 using NLsolve
 using DifferentialEquations
+using Compat
 
 using ..Properties
 using ..Polygons
@@ -31,19 +32,19 @@ struct PowerMap <: ConformalMap
     N::Int
 
     "control point coordinates in circle space"
-    ζ::Vector{Complex128}
+    ζ::Vector{ComplexF64}
 
     "control point coordinates in body-fixed space"
-    z::Vector{Complex128}
+    z::Vector{ComplexF64}
 
     "map Jacobian in body-fixed coordinates"
-    dzdζ::Vector{Complex128}
+    dzdζ::Vector{ComplexF64}
 
     "Area enclosed by the mapped shape"
     area      :: Float64
 
     "Centroid of the mapped shape"
-    Zc        :: Complex128
+    Zc        :: ComplexF64
 
     "2nd area moment of the mapped shape"
     J         :: Float64
@@ -76,7 +77,7 @@ with `m(ζ)`.
 # Example
 
 ```jldoctest
-julia> c = Complex128[1,0,1/4];
+julia> c = ComplexF64[1,0,1/4];
 
 julia> m = PowerMap(c)
 Power series map
@@ -90,7 +91,7 @@ julia> m(ζ)
      0.0+0.872727im
 ```
 """
-function PowerMap(ccoeff::Vector{Complex128}; N::Int = 200)
+function PowerMap(ccoeff::Vector{ComplexF64}; N::Int = 200)
   # Must have at least two entries. If no entries, make leading entry
   # a 1 (an identity map)
   if isempty(ccoeff)
@@ -135,10 +136,10 @@ end
 
 (m::PowerMap)(ζ) = m.ps(ζ)
 
-(minv::InverseMap{PowerMap})(z::Vector{Complex128}) =
+(minv::InverseMap{PowerMap})(z::Vector{ComplexF64}) =
         evalinv_exterior(z,minv.m.ps,minv.m.dps)
 
-(minv::InverseMap{PowerMap})(z::Complex128) = getindex(minv([z]),1)
+(minv::InverseMap{PowerMap})(z::ComplexF64) = getindex(minv([z]),1)
 
 
 (dm::DerivativeMap{PowerMap})(ζ) = dm.m.dps(ζ)
@@ -159,7 +160,7 @@ function shape_moments(ps::PowerSeries)
   if area > 0
     Zc = -π/area*sum(k.*c(-k).*d(k))
   else
-    Zc = Complex128(0)
+    Zc = ComplexF64(0)
   end
   J = Float64(-0.5π*c(-k)'*d(-kml)*(l.*c(-l)))
 
@@ -175,7 +176,7 @@ struct ExteriorMap <: ConformalMap
   N :: Int
 
   "Coordinates of vertices on the polygon, defined ccw"
-  z :: Vector{Complex128}
+  z :: Vector{ComplexF64}
 
   "Interior angles in the polygon"
   angle  :: Vector{Float64}
@@ -187,13 +188,13 @@ struct ExteriorMap <: ConformalMap
   accuracy  :: Float64
 
   "Coordinates of the prevertices on the unit circle (interior)"
-  ζ :: Vector{Complex128}
+  ζ :: Vector{ComplexF64}
 
   "Constant factor of the mapping"
-  constant  :: Complex128
+  constant  :: ComplexF64
 
   "Coordinates of the pre-prevertices on the unit circle (exterior)"
-  preprev   :: Vector{Complex128}
+  preprev   :: Vector{ComplexF64}
 
   "Angular locations of the pre-prevertices on the unit circle (exterior)"
   prevangle :: Vector{Float64}
@@ -205,13 +206,13 @@ struct ExteriorMap <: ConformalMap
   ps    :: PowerSeries
 
   "Moments of prevertices"
-  mom       :: Vector{Complex128}
+  mom       :: Vector{ComplexF64}
 
   "Area enclosed by the mapped polygon"
   area      :: Float64
 
   "Centroid of the mapped polygon"
-  Zc        :: Complex128
+  Zc        :: ComplexF64
 
   "2nd area moment of the mapped polygon"
   J         :: Float64
@@ -276,7 +277,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
 
   n = length(p.vert)
 
-  zeta0 = Complex128[]
+  zeta0 = ComplexF64[]
 
   w = flipdim(vertex(p),1)
   beta = 1 .- flipdim(interiorangle(p),1)
@@ -326,7 +327,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
   σs = -c/abs(c)./ζs
   dc = evaluate_exterior(σs,w,beta,zeta,c,qdat).*sin(dθ)
   dc ./= ζs
-  ccoeff = Complex128[]
+  ccoeff = ComplexF64[]
   for k = -1:0
     push!(ccoeff,sum(dc))
     dc .*= ζs
@@ -365,7 +366,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
               ncoeff,ps,mom,area,Zc,J,Ma)
 end
 
-function shape_moments(z::Vector{Complex128})
+function shape_moments(z::Vector{ComplexF64})
 
   zmid = 0.5*(z+circshift(z,-1))
   dz = circshift(z,-1)-z
@@ -423,7 +424,7 @@ function Base.summary(m::ExteriorMap)
 
 end
 
-function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
+function (m::ExteriorMap)(ζ::Vector{ComplexF64};inside::Bool=false)
   if inside
     return evaluate_exterior(ζ,flipdim(m.z,1),1 .- flipdim(m.angle,1),
             m.ζ,m.constant,m.qdata)
@@ -439,7 +440,7 @@ function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
 
 end
 
-(m::ExteriorMap)(ζ::Complex128;inside::Bool=false) = getindex(m([ζ];inside=inside),1)
+(m::ExteriorMap)(ζ::ComplexF64;inside::Bool=false) = getindex(m([ζ];inside=inside),1)
 
 """
     InverseMap(m::ConformalMap)
@@ -470,7 +471,7 @@ julia> m⁻¹(m(ζ))
 ```
 """ InverseMap
 
-function (minv::InverseMap{ExteriorMap})(z::Vector{Complex128};inside::Bool=false)
+function (minv::InverseMap{ExteriorMap})(z::Vector{ComplexF64};inside::Bool=false)
   if inside
     return evalinv_exterior(z,flipdim(minv.m.z,1),1 .- flipdim(minv.m.angle,1),
             minv.m.ζ,minv.m.constant,minv.m.qdata)
@@ -484,7 +485,7 @@ function (minv::InverseMap{ExteriorMap})(z::Vector{Complex128};inside::Bool=fals
 
 end
 
-(minv::InverseMap{ExteriorMap})(z::Complex128;inside::Bool=false) =
+(minv::InverseMap{ExteriorMap})(z::ComplexF64;inside::Bool=false) =
                 getindex(minv([z];inside=inside),1)
 
 
@@ -520,7 +521,7 @@ julia> dz
 """
 DerivativeMap
 
-function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=false)
+function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=false)
   if inside
     return evalderiv_exterior(ζ,1 .-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
   else
@@ -538,7 +539,7 @@ function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=fa
   end
 end
 
-function (dm::DerivativeMap{ExteriorMap})(ζ::Complex128;inside::Bool=false)
+function (dm::DerivativeMap{ExteriorMap})(ζ::ComplexF64;inside::Bool=false)
   dz, ddz = dm([ζ];inside=inside)
   return dz[1],ddz[1]
 end
@@ -591,7 +592,7 @@ Base.length(m::ConformalMap) = m.N
 
 
 """
-    parameters(m::ExteriorMap) -> Tuple{Vector{Complex128},Complex128}
+    parameters(m::ExteriorMap) -> Tuple{Vector{ComplexF64},ComplexF64}
 
 Returns a tuple of a vector of the prevertices and the complex factor of
 the exterior polygon mapping `m`.
@@ -616,7 +617,7 @@ julia> prev
 parameters(m::ExteriorMap) = flipdim(m.ζ,1), m.constant
 
 """
-    coefficients(m::ConformalMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
+    coefficients(m::ConformalMap) -> Tuple{Vector{ComplexF64},Vector{ComplexF64}}
 
 Returns a tuple of vectors of the complex coefficients of the multipole
 expansion of the mapping \$z(\\zeta)\$ described by `m` as well as the
@@ -635,7 +636,7 @@ julia> ccoeff, dcoeff = coefficients(m);
 coefficients(m::ConformalMap) = m.ps.ccoeff, m.ps.dcoeff
 
 """
-    moments(m::ExteriorMap) -> Vector{Complex128}
+    moments(m::ExteriorMap) -> Vector{ComplexF64}
 
 Return the moments of the prevertices for exterior polygon mapping `m`.
 
@@ -668,7 +669,7 @@ julia> area(m)
 ```
 
 ```jldoctest
-julia> c = Complex128[1];
+julia> c = ComplexF64[1];
 
 julia> m = PowerMap(c);
 
@@ -681,7 +682,7 @@ area(m::ConformalMap) = m.area
 
 
 """
-    centroid(m::ConformalMap) -> Complex128
+    centroid(m::ConformalMap) -> ComplexF64
 
 Returns the complex centroid position of the shape described by the
 mapping `m`.
