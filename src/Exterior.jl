@@ -279,7 +279,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
   zeta0 = Complex128[]
 
   w = flipdim(vertex(p),1)
-  beta = 1.-flipdim(interiorangle(p),1)
+  beta = 1 .- flipdim(interiorangle(p),1)
 
   # do some fixing
   n = length(p)
@@ -301,7 +301,7 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
     end
   end
 
-  p = Polygon(flipdim(w,1),1.-flipdim(beta,1))
+  p = Polygon(flipdim(w,1),1 .- flipdim(beta,1))
 
   nqpts = max(ceil(Int,-log10(tol)),2)
   qdat = qdata(beta,nqpts)
@@ -425,7 +425,7 @@ end
 
 function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
   if inside
-    return evaluate_exterior(ζ,flipdim(m.z,1),1.-flipdim(m.angle,1),
+    return evaluate_exterior(ζ,flipdim(m.z,1),1 .- flipdim(m.angle,1),
             m.ζ,m.constant,m.qdata)
   else
     b = -m.constant/abs(m.constant)
@@ -433,7 +433,7 @@ function (m::ExteriorMap)(ζ::Vector{Complex128};inside::Bool=false)
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 
     σ = b./ζ
-    return evaluate_exterior(σ,flipdim(m.z,1),1.-flipdim(m.angle,1),
+    return evaluate_exterior(σ,flipdim(m.z,1),1 .-flipdim(m.angle,1),
             m.ζ,m.constant,m.qdata)
   end
 
@@ -472,10 +472,10 @@ julia> m⁻¹(m(ζ))
 
 function (minv::InverseMap{ExteriorMap})(z::Vector{Complex128};inside::Bool=false)
   if inside
-    return evalinv_exterior(z,flipdim(minv.m.z,1),1.-flipdim(minv.m.angle,1),
+    return evalinv_exterior(z,flipdim(minv.m.z,1),1 .- flipdim(minv.m.angle,1),
             minv.m.ζ,minv.m.constant,minv.m.qdata)
   else
-    σ = evalinv_exterior(z,flipdim(minv.m.z,1),1.-flipdim(minv.m.angle,1),
+    σ = evalinv_exterior(z,flipdim(minv.m.z,1),1 .- flipdim(minv.m.angle,1),
             minv.m.ζ,minv.m.constant,minv.m.qdata)
     b = -minv.m.constant/abs(minv.m.constant)
 
@@ -522,7 +522,7 @@ DerivativeMap
 
 function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=false)
   if inside
-    return evalderiv_exterior(ζ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
+    return evalderiv_exterior(ζ,1 .-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
   else
     b = -dm.m.constant/abs(dm.m.constant)
     ζ[ζ.==0] = eps();
@@ -531,7 +531,7 @@ function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=fa
     σ = b./ζ
     dσ = -σ./ζ
     ddσ = -2.0*dσ./ζ
-    dz, ddz = evalderiv_exterior(σ,1.-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
+    dz, ddz = evalderiv_exterior(σ,1 .-flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
     ddz = ddz.*dσ.^2 + dz.*ddσ
     dz .*= dσ
     return dz, ddz
