@@ -55,7 +55,7 @@ end
 
 circle(N) = [exp(im*2π*(i-1)/N) for i in 1:N]
 
-doc"""
+@doc raw"""
     PowerMap(c::Vector{Complex12}[;N = 200]) <: ConformalMap
 
 Create a power series map from the exterior of the unit
@@ -441,7 +441,7 @@ end
 
 (m::ExteriorMap)(ζ::Complex128;inside::Bool=false) = getindex(m([ζ];inside=inside),1)
 
-doc"""
+"""
     InverseMap(m::ConformalMap)
 
 Constructs the inverse conformal map of the conformal map `m`.
@@ -517,7 +517,8 @@ julia> dz
  -1.11666+0.544576im
   3.99129-5.30641im
 ```
-"""function DerivativeMap() end
+"""
+DerivativeMap
 
 function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{Complex128};inside::Bool=false)
   if inside
@@ -566,7 +567,8 @@ Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices
    number of multipole coefficients = 100
 ```
 
-"""function Base.summary() end
+"""
+Base.summary
 
 
 """
