@@ -3,6 +3,7 @@
 ```@meta
 DocTestSetup = quote
 using SchwarzChristoffel
+using Compat
 srand(1)
 end
 ```
@@ -18,3 +19,8 @@ Order   = [:type, :function]
 ```@index
 Pages = ["exterior.md"]
 ```
+
+```@meta
+DocTestSetup = nothing
+```
+

@@ -3,6 +3,7 @@
 ```@meta
 DocTestSetup = quote
 using SchwarzChristoffel
+using Compat
 srand(1)
 end
 ```
@@ -22,4 +23,8 @@ Polygons.naca4
 
 ```@index
 Pages = ["polygons.md"]
+```
+
+```@meta
+DocTestSetup = nothing
 ```
