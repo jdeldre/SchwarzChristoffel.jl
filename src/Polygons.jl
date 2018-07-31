@@ -1,6 +1,6 @@
 module Polygons
 
-
+using Compat
 import Base: length, show, isinf
 
 export Polygon,vertex,interiorangle,isinpoly,naca4
@@ -21,7 +21,7 @@ Polygon with 4 vertices at
 ```
 """
 struct Polygon
-  vert :: Vector{Complex128}
+  vert :: Vector{ComplexF64}
   angle :: Vector{Float64}
 
   Polygon(vert,angle) = abs(vert[end]-vert[1])<eps() ? new(vert[1:end-1],angle) : new(vert,angle)
@@ -33,7 +33,7 @@ Polygon(x::T,y::T,angle) where T = Polygon(x+im*y,angle)
 Polygon(x::T,y::T) where T = Polygon(x+im*y,interiorangle(x+im*y))
 
 """
-    Polygon(w::Vector{Complex128})
+    Polygon(w::Vector{ComplexF64})
 
 Sets up a polygon with the coordinates of the vertices specified
 with complex vector `w`. As usual, these must be supplied in
@@ -48,10 +48,10 @@ Polygon with 4 vertices at
              interior angles/π = [0.5, 0.656, 0.422, 0.422]
 ```
 """
-Polygon(w::Vector{Complex128}) = Polygon(w,interiorangle(w))
+Polygon(w::Vector{ComplexF64}) = Polygon(w,interiorangle(w))
 
 """
-    vertex(p::Polygon) -> Vector{Complex128}
+    vertex(p::Polygon) -> Vector{ComplexF64}
 
 Returns the vector of vertices of the polygon `p`, in complex form.
 
@@ -122,7 +122,7 @@ julia> interiorangle(p)
 """
 interiorangle(p::Polygon) = length(p.angle) != 0 ? p.angle : interiorangle(p.vertex)
 
-function interiorangle(w::Vector{Complex128})
+function interiorangle(w::Vector{ComplexF64})
   if length(w)==0
     return []
   end
@@ -143,7 +143,7 @@ function interiorangle(w::Vector{Complex128})
 end
 
 
-function isinpoly(z::Complex128,w::Vector{Complex128},beta::Vector{Float64},tol)
+function isinpoly(z::ComplexF64,w::Vector{ComplexF64},beta::Vector{Float64},tol)
 
   index = 0.0
 
@@ -185,7 +185,7 @@ end
 isinpoly(z,w,beta) = isinpoly(z,w,beta,eps())
 
 """
-    isinpoly(z::Complex128,p::Polygon) -> Bool
+    isinpoly(z::ComplexF64,p::Polygon) -> Bool
 
 Returns `true` or `false` depending on whether `z` is inside
 or outside polygon `p`.
@@ -205,7 +205,7 @@ false
 isinpoly(z,p::Polygon) = isinpoly(z,p::Polygon,eps())
 
 """
-    isinpoly(z::Complex128,p::Polygon,tol::Float64) -> Bool
+    isinpoly(z::ComplexF64,p::Polygon,tol::Float64) -> Bool
 
 Returns `true` if `z` is inside or within distance `tol` of polygon `p`.
 
@@ -228,7 +228,7 @@ winding(z,x...) = float.(isinpoly(z,x...))
 #=  some specific shape families =#
 
 """
-    naca4(cam,pos,t[;np=20][,Zc=0.0+0.0im][,len=1.0]) -> Vector{Complex128}
+    naca4(cam,pos,t[;np=20][,Zc=0.0+0.0im][,len=1.0]) -> Vector{ComplexF64}
 
 Generates the vertices of a NACA 4-digit airfoil of chord length 1. The
 relative camber is specified by `cam`, the position of
@@ -329,7 +329,7 @@ for ipan = 1:npan
     xpan[ipan] = 0.5*(xpan1+xpan2)
     ypan[ipan] = 0.5*(ypan1+ypan2)
 end
-w = Complex128[1;flipdim(xpan,1)+im*flipdim(ypan,1)]*len
+w = ComplexF64[1;flipdim(xpan,1)+im*flipdim(ypan,1)]*len
 w -=mean(w)
 return w+Zc
 
