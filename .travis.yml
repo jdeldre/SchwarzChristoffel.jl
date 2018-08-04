@@ -5,7 +5,7 @@ os:
 #  - osx
 julia:
   - 0.6
-# - nightly
+  - nightly
 # - release
 notifications:
   email: false
@@ -18,8 +18,7 @@ script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 #  - julia -e 'Pkg.clone(pwd()); Pkg.build("SchwarzChristoffel"); Pkg.test("SchwarzChristoffel"; coverage=true)'
 #
-#  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'Pkg.clone(pwd());Pkg.test("SchwarzChristoffel"; coverage=true);'
-   - export LD_LIBRARY_PATH=$HOME/.julia/v0.6/Conda/deps/usr/lib; LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'Pkg.clone(pwd());Pkg.test("SchwarzChristoffel"; coverage=true);'
+
 before_install:
   - julia -e 'ENV["PYTHON"]=""; Pkg.add("Conda"); using Conda; Conda.update(); Conda.add("matplotlib"); Conda.add("basemap"); Pkg.add("PyCall"); Pkg.build("PyCall"); Pkg.add("PyPlot");'
 after_success:
