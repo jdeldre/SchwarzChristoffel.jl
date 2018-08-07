@@ -7,6 +7,6 @@ using SchwarzChristoffel
   @includetests ARGS
 end
 
-if isempty(ARGS)
-    include("../docs/make.jl")
-end
+# if isempty(ARGS)
+#     include("../docs/make.jl")
+# end
