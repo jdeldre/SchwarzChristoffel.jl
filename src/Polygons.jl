@@ -21,7 +21,7 @@ Polygon with 4 vertices at
 ```
 """
 struct Polygon
-  vert :: Vector{Complex128}
+  vert :: Vector{ComplexF64}
   angle :: Vector{Float64}
 
   Polygon(vert,angle) = abs(vert[end]-vert[1])<eps() ? new(vert[1:end-1],angle) : new(vert,angle)
@@ -48,7 +48,7 @@ Polygon with 4 vertices at
              interior angles/π = [0.5, 0.656, 0.422, 0.422]
 ```
 """
-Polygon(w::Vector{Complex128}) = Polygon(w,interiorangle(w))
+Polygon(w::Vector{ComplexF64}) = Polygon(w,interiorangle(w))
 
 """
     vertex(p::Polygon) -> Vector{Complex128}
@@ -122,7 +122,7 @@ julia> interiorangle(p)
 """
 interiorangle(p::Polygon) = length(p.angle) != 0 ? p.angle : interiorangle(p.vertex)
 
-function interiorangle(w::Vector{Complex128})
+function interiorangle(w::Vector{ComplexF64})
   if length(w)==0
     return []
   end
@@ -143,7 +143,7 @@ function interiorangle(w::Vector{Complex128})
 end
 
 
-function isinpoly(z::Complex128,w::Vector{Complex128},beta::Vector{Float64},tol)
+function isinpoly(z::ComplexF64,w::Vector{ComplexF64},beta::Vector{Float64},tol)
 
   index = 0.0
 
@@ -159,7 +159,7 @@ function isinpoly(z::Complex128,w::Vector{Complex128},beta::Vector{Float64},tol)
   tangents = sign.(circshift(w,-1)-w)
 
   # Search for repeated points and fix these tangents
-  for p = find( tangents .== 0 )
+  for p = findall( tangents .== 0 )
     v = [w[p+1:end];w]
     tangents[p] = sign(v[findfirst(v.!=w[p])]-w[p])
   end
@@ -329,7 +329,7 @@ for ipan = 1:npan
     xpan[ipan] = 0.5*(xpan1+xpan2)
     ypan[ipan] = 0.5*(ypan1+ypan2)
 end
-w = Complex128[1;flipdim(xpan,1)+im*flipdim(ypan,1)]*len
+w = ComplexF64[1;flipdim(xpan,1)+im*flipdim(ypan,1)]*len
 w -=mean(w)
 return w+Zc
 

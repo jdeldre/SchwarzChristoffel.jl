@@ -41,7 +41,7 @@ function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
   C = dps.ps.ccoeff
   dz = C[1]
   ζⁿ = 1/ζ^2
-  ddz = Complex128(0)
+  ddz = ComplexF64(0)
   for n in 1:length(C)-2
     dz -= n*C[n+2]*ζⁿ
     ζⁿ /= ζ
@@ -59,14 +59,14 @@ function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
   return dz, ddz
 end
 
-function evalinv_exterior(z::Vector{Complex128},ps::PowerSeries,
+function evalinv_exterior(z::Vector{ComplexF64},ps::PowerSeries,
                                 dps::PowerSeriesDerivatives)
 #=
 Evaluates the inverse of the exterior power series mapping, using a combination
 of integration and Newton iteration.
 =#
 
-   ζ = zeros(Complex128,size(z))
+   ζ = zeros(ComplexF64,size(z))
    lenz = length(z)
    ζ0 = []
    maxiter = 10

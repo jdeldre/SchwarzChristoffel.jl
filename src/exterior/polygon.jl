@@ -6,8 +6,8 @@ Schwarz-Christoffel Transformation", STAN-CS-79-710, 1979.
 
 
 #= functions for the Schwarz-Christoffel exterior map from unit disk =#
-function param(w::Vector{Complex128},β::Vector{Float64},
-                 ζ0::Vector{Complex128},
+function param(w::Vector{ComplexF64},β::Vector{Float64},
+                 ζ0::Vector{ComplexF64},
                  qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 #=
 Solve for the parameters of the exterior Schwarz-Christoffel mapping: the
@@ -19,7 +19,7 @@ the Gauss-Jacobi quadrature data in `qdat`
 
   n = length(w)
   if n == 2
-    ζ = Complex128[-1,1]
+    ζ = ComplexF64[-1,1]
   else
     len = abs.(diff(circshift(w,1)))
     nmlen = abs.(len[3:n-1]/len[2])
@@ -39,7 +39,7 @@ the Gauss-Jacobi quadrature data in `qdat`
     df = OnceDifferentiable(depfun!, y0, F0)
     sol = nlsolve(df,y0,show_trace = :false)
 
-    ζ = zeros(Complex128,n)
+    ζ = zeros(ComplexF64,n)
     θ = zeros(n-1)
     y_to_ζ!(ζ,θ,sol.zero)
 
@@ -53,9 +53,9 @@ the Gauss-Jacobi quadrature data in `qdat`
 
 end
 
-function evaluate_exterior(ζ::Vector{Complex128},w::Vector{Complex128},
-                  β::Vector{Float64},prev::Vector{Complex128},
-                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+function evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
+                  β::Vector{Float64},prev::Vector{ComplexF64},
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
   #=
   Evaluates the exterior Schwarz-Christoffel mapping at `ζ`, which is
   presumed to be inside the unit circle. The vector `w` are the vertices (in
@@ -77,7 +77,7 @@ function evaluate_exterior(ζ::Vector{Complex128},w::Vector{Complex128},
   dequad = DQuad(β,qdat)
 
   # initialize the mapped evaluation points
-  z = zeros(Complex128,neval)
+  z = zeros(ComplexF64,neval)
 
   # find the closest prevertices to each evaluation point and their
   #  corresponding distances
@@ -134,8 +134,8 @@ function evaluate_exterior(ζ::Vector{Complex128},w::Vector{Complex128},
 
 end
 
-function evalderiv_exterior(ζ::Vector{Complex128},β::Vector{Float64},
-                  prev::Vector{Complex128},c::Complex128)
+function evalderiv_exterior(ζ::Vector{ComplexF64},β::Vector{Float64},
+                  prev::Vector{ComplexF64},c::ComplexF64)
 
 #=
 Evaluates the first and second derivative of the exterior Schwarz-Christoffel
@@ -155,9 +155,9 @@ angles (also in clockwise order), `prev` are the prevertices on the unit circle,
 
 end
 
-function evalinv_exterior(z::Vector{Complex128},w::Vector{Complex128},
-                  β::Vector{Float64},prev::Vector{Complex128},
-                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+function evalinv_exterior(z::Vector{ComplexF64},w::Vector{ComplexF64},
+                  β::Vector{Float64},prev::Vector{ComplexF64},
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
 #=
 Evaluates the inverse of the exterior Schwarz-Christoffel mapping, using a combination
@@ -165,7 +165,7 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
 =#
 
    n = length(w)
-   ζ = zeros(Complex128,size(z))
+   ζ = zeros(ComplexF64,size(z))
    lenz = length(z)
    ζ0 = []
    maxiter = 10
@@ -175,7 +175,7 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    # prevertices
    done = zeros(Bool,size(z))
    for j = 1:n
-     idx = find(abs.(z-w[j]) .< 3*eps())
+     idx = findall(abs.(z-w[j]) .< 3*eps())
      ζ[idx] = prev[j]
      done[idx] = true
    end
@@ -233,7 +233,7 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
 end
 
 
-function invfunc(u,scale,β::Vector{Float64},prev::Vector{Complex128},c::Complex128)
+function invfunc(u,scale,β::Vector{Float64},prev::Vector{ComplexF64},c::ComplexF64)
     lenu = length(u)
     lenzp = Int(lenu/2)
     ζ = u[1:lenzp]+im*u[lenzp+1:lenu]
@@ -243,9 +243,9 @@ function invfunc(u,scale,β::Vector{Float64},prev::Vector{Complex128},c::Complex
     zdot = [real(f);imag(f)]
 end
 
-function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
-                  β::Vector{Float64},prev::Vector{Complex128},
-                  c::Complex128,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
+                  β::Vector{Float64},prev::Vector{ComplexF64},
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
   n = length(w)
   tol = 1000.0*10.0^(-size(qdat[1])[1])
@@ -273,8 +273,8 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
 
   A = zeros(Float64,2,2)
 
-  ζbase = NaN*ones(Complex128,n)
-  zbase = NaN*ones(Complex128,n)
+  ζbase = NaN*ones(ComplexF64,n)
+  zbase = NaN*ones(ComplexF64,n)
   idx = []
   while M > 0
     for j = 1:n
@@ -305,7 +305,7 @@ function initial_guess(z::Vector{Complex128},w::Vector{Complex128},
         done[active] = ones(Bool,sum(active))
         for k in [1:j-1;j+1:n]'
           A[:,1] = [real(direcn[k]);imag(direcn[k])]
-          for p in find(active)
+          for p in findall(active)
             dif = z0[p]-z[p]
               A[:,2] = [real(dif);imag(dif)]
               if cond(A) < eps()
@@ -437,8 +437,8 @@ function DabsQuad(β::Vector{T},
   DabsQuad{T,n,nqpts}(β,qdat)
 end
 
-function (I::DabsQuad{T,N,NQ})(ζ1::Vector{Complex128},ζ2::Vector{Complex128},
-                        sing1::Vector{Int64},ζ::Vector{Complex128}) where {T,N,NQ}
+function (I::DabsQuad{T,N,NQ})(ζ1::Vector{ComplexF64},ζ2::Vector{ComplexF64},
+                        sing1::Vector{Int64},ζ::Vector{ComplexF64}) where {T,N,NQ}
 #=
 This integrates |z'(λ)| from `ζ1` to `ζ2` on the unit circle, using
 Gauss-Jacobi quadrature, where
@@ -464,7 +464,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
    end
    result = zeros(Float64,size(ζ1))
 
-   nontriv = find(ζ1.!=ζ2)
+   nontriv = findall(ζ1.!=ζ2)
     #tic()
    for k in nontriv
      ζ1k, ζ2k, arg1k, arg2k, sing1k =
@@ -504,8 +504,8 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
    return result
 end
 
-function (I::DabsQuad{T,N,NQ})(ζ1::Vector{Complex128},ζ2::Vector{Complex128},
-                        sing1::Vector{Int64},ζ::Vector{Complex128},pow::Int) where {T,N,NQ}
+function (I::DabsQuad{T,N,NQ})(ζ1::Vector{ComplexF64},ζ2::Vector{ComplexF64},
+                        sing1::Vector{Int64},ζ::Vector{ComplexF64},pow::Int) where {T,N,NQ}
 
 #=
 This integrates λ⁻ᵏz'(λ) (where k is `pow`) from `ζ1` to `ζ2` on the unit circle,
@@ -530,9 +530,9 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
    if isempty(sing1)
      sing1 = zeros(size(ζ1))
    end
-   result = zeros(Complex128,size(ζ1))
+   result = zeros(ComplexF64,size(ζ1))
 
-   nontriv = find(ζ1.!=ζ2)
+   nontriv = findall(ζ1.!=ζ2)
     #tic()
    for k in nontriv
      ζ1k, ζ2k, arg1k, arg2k, sing1k =
@@ -596,8 +596,8 @@ function DQuad(β::Vector{T},
 end
 
 
-function (I::DQuad{T,N,NQ})(ζ1::Vector{Complex128},ζ2::Vector{Complex128},
-          sing1::Vector{Int64},ζ::Vector{Complex128};pow::Int=0) where {T,N,NQ}
+function (I::DQuad{T,N,NQ})(ζ1::Vector{ComplexF64},ζ2::Vector{ComplexF64},
+          sing1::Vector{Int64},ζ::Vector{ComplexF64};pow::Int=0) where {T,N,NQ}
 #=
 This integrates z'(λ) from `ζ1` to `ζ2` on a straight path in the circle
 plane, where `sing1` contains the index of the prevertex in `ζ` that `ζ1` corresponds
@@ -615,9 +615,9 @@ k = `pow`.
    if isempty(sing1)
      sing1 = zeros(Int,size(ζ1))
    end
-   result = zeros(Complex128,size(ζ1))
+   result = zeros(ComplexF64,size(ζ1))
 
-   nontriv = find(ζ1.!=ζ2)
+   nontriv = findall(ζ1.!=ζ2)
     #tic()
    for k in nontriv
      ζ1k, ζ2k, sing1k = ζ1[k], ζ2[k], sing1[k]
@@ -672,10 +672,10 @@ function Depfun(β::Vector{T},nmlen::Vector{T},qdat:: Tuple{Array{T,2},Array{T,2
     # should compute nmlen in here
     n = length(β)
     nqpts = size(qdat[1],1)
-    ζ = zeros(Complex128,n)
+    ζ = zeros(ComplexF64,n)
     θ = zeros(n-1)
-    mid = zeros(Complex128,n-2)
-    ints = zeros(Complex128,n-2)
+    mid = zeros(ComplexF64,n-2)
+    ints = zeros(ComplexF64,n-2)
     dabsquad = DabsQuad(β,qdat)
     Depfun{T,n,nqpts}(ζ,β,nmlen,qdat,θ,mid,ints,dabsquad)
 end
