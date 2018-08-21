@@ -411,7 +411,7 @@ function madvance(P)
     end
   end
   Pplus1 = Pplus1[:,2:end]
-  Pplus1 = sortrows(Pplus1)
+  Pplus1 = sortslices(Pplus1, dims=1)
   dP = sum(abs.([transpose(Pplus1[1,:]);diff(Pplus1,1)]),2)
   return Pplus1[dP[:].!=0,:]
 
