@@ -517,7 +517,8 @@ julia> dz
  -1.11666+0.544576im
   3.99129-5.30641im
 ```
-"""function DerivativeMap() end
+"""
+function DerivativeMap() end
 
 function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=false)
   if inside
@@ -566,7 +567,8 @@ Schwarz-Christoffel map of unit circle to exterior of polygon with 4 vertices
    number of multipole coefficients = 100
 ```
 
-"""function Base.summary() end
+"""
+Base.summary
 
 
 """
