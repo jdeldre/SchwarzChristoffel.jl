@@ -55,7 +55,7 @@ end
 
 circle(N) = [exp(im*2π*(i-1)/N) for i in 1:N]
 
-doc"""
+@doc raw"""
     PowerMap(c::Vector{Complex12}[;N = 200]) <: ConformalMap
 
 Create a power series map from the exterior of the unit
@@ -67,8 +67,8 @@ The form of the mapping is
 z(\zeta) = c_{1}\zeta + c_{0} + \sum_{j=1}^{N_{c}} \frac{c_{-j}}{\zeta^{j}}
 ```
 
-The entries in `c` correspond as follows: `c[1]`$\rightarrow c_{1}$,
-`c[2]`$\rightarrow c_{0}$, `c[3]`$\rightarrow c_{-1}$, etc.
+The entries in `c` correspond as follows: `c[1]` ``\rightarrow c_{1}``,
+`c[2]` ``\rightarrow c_{0}``, `c[3]` ``\rightarrow c_{-1}``, etc.
 
 The resulting map `m` can be evaluated at a single or a vector of points `ζ`
 with `m(ζ)`.
@@ -441,7 +441,7 @@ end
 
 (m::ExteriorMap)(ζ::ComplexF64;inside::Bool=false) = getindex(m([ζ];inside=inside),1)
 
-doc"""
+"""
     InverseMap(m::ConformalMap)
 
 Constructs the inverse conformal map of the conformal map `m`.
