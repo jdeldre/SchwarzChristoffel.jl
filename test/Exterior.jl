@@ -24,13 +24,13 @@
         ComplexF64[-6.934402676 - 7.689645145im,
                     0.043977374 - 1.112493651im,
                     2.411813129 - 0.044778980im]
-  @test isapprox(m⁻¹(z;inside=true),zeta;atol=eps())
+  @test m⁻¹(z;inside=true) ≈ zeta
 
   (dz,ddz) = dm(zeta;inside=true)
-  @test isapprox(dz,
+  @test dz ≈
         ComplexF64[67.206798744 + 76.628383501im,
                    -1.116655339 + 0.5445759699im,
-                    3.991294815 - 5.3064069537im];atol=eps())
+                    3.991294815 - 5.3064069537im]
   zeta = 0.5-0.75im
   z = m(zeta;inside=true)
   @test z ≈ 0.043977374 - 1.112493651im
@@ -68,19 +68,19 @@ end
   c = ComplexF64[0.5(a+b),0,0.5(a-b)]
   m = SchwarzChristoffel.PowerMap(c)
   @test area(m) ≈    3.141592654
-  @test isapprox(centroid(m),ComplexF64(0);atol=eps())
+  @test centroid(m) ≈ ComplexF64(0)
   @test Jmoment(m) ≈ 1.570796327
   a = 1
   b = 0
   c = ComplexF64[0.5(a+b),0,0.5(a-b)]
   m = SchwarzChristoffel.PowerMap(c)
   @test area(m) ≈    Float64(0)
-  @test isapprox(centroid(m),ComplexF64(0);atol=eps())
+  @test centroid(m) ≈ ComplexF64(0)
   @test Jmoment(m) ≈ Float64(0)
 
   m = SchwarzChristoffel.PowerMap(ComplexF64[1,0,0,0,0,0.1])
   @test area(m) ≈ 3.015928947
-  @test isapprox(centroid(m),ComplexF64(0);atol=eps())
+  @test centroid(m) ≈ ComplexF64(0)
   @test Jmoment(m) ≈ 1.475920229
 
   a = 1
@@ -94,7 +94,7 @@ end
   @test z ≈
       ComplexF64[0.595+1.515im,-1.2125-0.9875im,
                  0.195909090909im]
-  @test isapprox(m⁻¹(z),zeta;atol=eps())
+  @test m⁻¹(z) ≈ zeta
   dz, ddz = dm(zeta)
   @test dz ≈ ComplexF64[0.586 + 0.027im,
                         0.55 + 0.05625im,
@@ -102,7 +102,7 @@ end
   zeta = 1.0+3.0im
   z = m(zeta)
   @test z ≈ 0.595+1.515im
-  @test isapprox(m⁻¹(z),zeta;atol=eps())
+  @test m⁻¹(z) ≈ zeta
   dz, ddz = dm(zeta)
   @test dz ≈ 0.586 + 0.027im
 
@@ -113,6 +113,6 @@ end
   m⁻¹ = SchwarzChristoffel.InverseMap(m)
   dm = SchwarzChristoffel.DerivativeMap(m)
   z = [-1.0+0im,-1.1+0im,1.0+0im,1.1+0im]
-  @test isapprox(m(m⁻¹(z)),z;atol=eps())
+  @test m(m⁻¹(z)) ≈ z
 
 end

@@ -84,7 +84,8 @@ function evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
   dz = abs.(ζ[:,ones(Int,n)]-prev[:,ones(Int,neval)].')
   #dz = abs.(hcat([ζ for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
   (dist,ind) = findmin(dz,2)
-  sing = floor.(Int,(ind[:]-1)/neval)+1
+  #sing = floor.(Int,(ind[:]-1)/neval)+1
+  sing = [I[2] for I in ind]
 
   # find any prevertices in the evaluation list and set them equal to
   #  the corresponding vertices. The origin is also a singular point
@@ -290,7 +291,7 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
     if isempty(idx)
       dist,idxtemp = findmin(abs.( z[.~done,ones(Int,n)].' - zbase[:,ones(Int,M)] ),1)
       for k = 1:M
-          push!(idx,idxtemp[k]-(k-1)*n)
+          push!(idx,idxtemp[k][1])
       end
     else
       idx[.~done] = idx[.~done].%n + 1
@@ -410,7 +411,7 @@ function madvance(P)
     end
   end
   Pplus1 = Pplus1[:,2:end]
-  Pplus1 = sortslices(Pplus1, dims=1)
+  Pplus1 = sortrows(Pplus1)
   dP = sum(abs.([transpose(Pplus1[1,:]);diff(Pplus1,1)]),2)
   return Pplus1[dP[:].!=0,:]
 
