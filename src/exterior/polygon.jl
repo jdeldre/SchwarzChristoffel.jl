@@ -455,7 +455,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
    argζ2 = angle.(ζ2)
    ang21 = angle.(ζ2./ζ1)
 
-   bigargz = transpose(argz[:,ones(Int,NQ)])
+   bigargz = transpose(repeat(argz, 1, NQ))
 
    discont = (argζ2-argζ1).*ang21 .< 0
    argζ2[discont] += 2π*sign.(ang21[discont])
@@ -476,7 +476,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
      ind = ((sing1k+N) % (N+1)) + 1
      ζnd = 0.5*((argr-arg1k)*qnode[:,ind] .+ argr .+ arg1k)
      wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
-     θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+     θ = (repeat(ζnd, 1, N) .- bigargz .+ 2π).%(2π)
      θ[θ.>π] = 2π .- θ[θ.>π]
      terms = 2sin.(0.5θ)
      if !any(terms==0.0)
@@ -493,7 +493,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
             ζnd = 0.5*((argr-argl)*qnode[:,N+1] .+ argr .+ argl)
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
             #θ = hcat([(ζnd - argz[i] + 2π).%(2π) for i = 1:N]...)
-            θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+            θ = (repeat(ζnd, 1, N) .- bigargz .+ 2π).%(2π)
             θ[θ.>π] = 2π-θ[θ.>π]
             terms = 2sin.(0.5θ)
             result[k] += transpose(exp.(log.(terms)*I.β))*wt
@@ -523,7 +523,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
    argζ2 = angle.(ζ2)
    ang21 = angle.(ζ2./ζ1)
 
-   bigargz = transpose(argz[:,ones(Int,NQ)])
+   bigargz = transpose(repeat(argz, 1, NQ))
 
    discont = (argζ2-argζ1).*ang21 .< 0
    argζ2[discont] += 2π*sign.(ang21[discont])
@@ -544,7 +544,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
      ind = ((sing1k+N) % (N+1)) + 1
      ζnd = 0.5*((argr-arg1k)*qnode[:,ind] .+ argr .+ arg1k)
      wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
-     θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+     θ = (repeat(ζnd, 1, N) .- bigargz .+ 2π).%(2π)
      #θ[θ.>π] = 2π-θ[θ.>π]
      #terms = 2sin.(0.5θ)
      terms = 1 .- exp.(im*θ)
@@ -563,7 +563,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
             ζnd = 0.5*((argr-argl)*qnode[:,N+1] .+ argr .+ argl)
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
             #θ = hcat([(ζnd - argz[i] + 2π).%(2π) for i = 1:N]...)
-            θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
+            θ = (repeat(ζnd, 1, N) .- bigargz .+ 2π).%(2π)
             #θ[θ.>π] = 2π-θ[θ.>π]
             #terms = 2sin.(0.5θ)
             terms = 1 .- exp.(im*θ)
@@ -611,7 +611,7 @@ k = `pow`.
 
    β = [I.β;-2+pow]
 
-   bigζ = transpose(ζ[:,ones(Int,NQ)])
+   bigζ = transpose(repeat(ζ, 1, NQ))
 
    if isempty(sing1)
      sing1 = zeros(Int,size(ζ1))
@@ -631,7 +631,7 @@ k = `pow`.
 
      ζnd = 0.5*((ζr-ζ1k)*qnode[:,ind] .+ ζr .+ ζ1k)
      wt = 0.5*(ζr-ζ1k)*qwght[:,ind]
-     terms = 1 .- ζnd[:,ones(Int,N)]./bigζ
+     terms = 1 .- repeat(ζnd, 1, N)./bigζ
      if !any(terms==0.0)
        terms = hcat(terms,ζnd)
         # If ζ1k is a prevertex, adjust the integrand so that it is properly
@@ -648,7 +648,7 @@ k = `pow`.
             ζr = ζl + dist*(ζ2k-ζl)
             ζnd = 0.5*((ζr-ζl)*qnode[:,N+1] .+ ζr .+ ζl)
             wt = 0.5*(ζr-ζl)*qwght[:,N+1]
-            terms = 1 .- ζnd[:,ones(Int,N)]./bigζ
+            terms = 1 .- repeat(ζnd, 1, N)./bigζ
             terms = hcat(terms,ζnd)
             result[k] += transpose(exp.(log.(terms)*β))*wt
         end

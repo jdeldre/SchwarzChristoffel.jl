@@ -152,7 +152,7 @@ function shape_moments(ps::PowerSeries)
   ncoeff = length(ps.ccoeff)-2
   k = -1:ncoeff
   l = -1:ncoeff
-  kml = k[:,ones(Int,length(ps.ccoeff))]'-l[:,ones(Int,length(ps.ccoeff))]
+  kml = repeat(transpose(k), length(ps.ccoeff))-repeat(l, 1, length(ps.ccoeff))
 
   c = Reflect(ShiftReindex(ps.ccoeff,-2))
   d = Reflect(OddReindex(ps.dcoeff))
