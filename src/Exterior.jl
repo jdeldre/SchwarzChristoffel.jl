@@ -3,6 +3,9 @@ module Exterior
 using NLsolve
 using DifferentialEquations
 
+using LinearAlgebra
+using Statistics
+
 using ..Properties
 using ..Polygons
 
@@ -106,9 +109,9 @@ function PowerMap(ccoeff::Vector{ComplexF64}; N::Int = 200)
   # Coefficients of |z(ζ)|²
   # dcoeff[1] = d₀, dcoeff[2] = d₋₁, etc.
   # Note that d₁ = conj(d₋₁) = conj(dcoeff[2]), d₂ = conj(d₋₂) = conj(dcoeff[3])
-  dcoeff = [dot(ccoeff,ccoeff)]
+  dcoeff = [ccoeff'ccoeff]
   for k = 1:ncoeff+1
-      push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
+      push!(dcoeff,ccoeff[1:end-k]'ccoeff[k+1:end])
   end
   ps = PowerSeries(ccoeff,dcoeff)
   dps = PowerSeriesDerivatives(ps)
@@ -278,16 +281,16 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
 
   zeta0 = ComplexF64[]
 
-  w = flipdim(vertex(p),1)
-  beta = 1 .- flipdim(interiorangle(p),1)
+  w = reverse(vertex(p), dims = 1)
+  beta = 1 .- reverse(interiorangle(p), dims = 1)
 
   # do some fixing
   n = length(p)
   renum = 1:n
   shift = [2:n;1]
-  w = flipdim(vertex(p),1)
-  beta = 1 - flipdim(interiorangle(p),1)
-  while any(abs.(beta[n]-[0;1]).<eps()) & (n > 2)
+  w = reverse(vertex(p), dims = 1)
+  beta = 1 .- reverse(interiorangle(p), dims = 1)
+  while any(abs.(beta[n] .- [0;1]) .< eps()) & (n > 2)
     renum = renum[shift]
     w = w[shift]
     beta = beta[shift]
@@ -301,17 +304,17 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
     end
   end
 
-  p = Polygon(flipdim(w,1),1 .- flipdim(beta,1))
+  p = Polygon(reverse(w, dims = 1),1 .- reverse(beta, dims = 1))
 
   nqpts = max(ceil(Int,-log10(tol)),2)
   qdat = qdata(beta,nqpts)
 
   zeta, c = param(w,beta,zeta0,qdat)
-  preprev = -c/abs(c)./flipdim(zeta,1)
+  preprev = -c/abs(c)./reverse(zeta, dims = 1)
   prevangle = angle.(preprev)
 
   # first two entries are for c₁ and c₀.
-  betaflip = flipdim(beta,1)
+  betaflip = reverse(beta, dims = 1)
   mom = [sum(betaflip.*preprev)]
   for k = 1:ncoeff
     push!(mom,sum(betaflip.*preprev.^(k+1)))
@@ -351,9 +354,9 @@ function ExteriorMap(p::Polygon;tol::Float64 = 1e-8,ncoeff::Int = 100)
 
   # Now compute the coefficients of the square mapping
   # first entry is d₀
-  dcoeff = [dot(ccoeff,ccoeff)]
+  dcoeff = [ccoeff'ccoeff]
   for k = 1:ncoeff+1
-    push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
+    push!(dcoeff,ccoeff[1:end-k]'ccoeff[k+1:end])
   end
   ps = PowerSeries(ccoeff,dcoeff)
 
@@ -425,7 +428,7 @@ end
 
 function (m::ExteriorMap)(ζ::Vector{ComplexF64};inside::Bool=false)
   if inside
-    return evaluate_exterior(ζ,flipdim(m.z,1),1 .- flipdim(m.angle,1),
+    return evaluate_exterior(ζ,reverse(m.z, dims = 1),1 .- reverse(m.angle, dims = 1),
             m.ζ,m.constant,m.qdata)
   else
     b = -m.constant/abs(m.constant)
@@ -433,7 +436,7 @@ function (m::ExteriorMap)(ζ::Vector{ComplexF64};inside::Bool=false)
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 
     σ = b./ζ
-    return evaluate_exterior(σ,flipdim(m.z,1),1 .- flipdim(m.angle,1),
+    return evaluate_exterior(σ,reverse(m.z, dims = 1),1 .- reverse(m.angle, dims = 1),
             m.ζ,m.constant,m.qdata)
   end
 
@@ -472,10 +475,10 @@ julia> m⁻¹(m(ζ))
 
 function (minv::InverseMap{ExteriorMap})(z::Vector{ComplexF64};inside::Bool=false)
   if inside
-    return evalinv_exterior(z,flipdim(minv.m.z,1),1 .- flipdim(minv.m.angle,1),
+    return evalinv_exterior(z,reverse(minv.m.z, dims = 1),1 .- reverse(minv.m.angle, dims = 1),
             minv.m.ζ,minv.m.constant,minv.m.qdata)
   else
-    σ = evalinv_exterior(z,flipdim(minv.m.z,1),1 .- flipdim(minv.m.angle,1),
+    σ = evalinv_exterior(z,reverse(minv.m.z, dims = 1),1 .- reverse(minv.m.angle, dims = 1),
             minv.m.ζ,minv.m.constant,minv.m.qdata)
     b = -minv.m.constant/abs(minv.m.constant)
 
@@ -522,7 +525,7 @@ function DerivativeMap() end
 
 function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=false)
   if inside
-    return evalderiv_exterior(ζ,1 .- flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
+    return evalderiv_exterior(ζ,1 .- reverse(dm.m.angle, dims = 1),dm.m.ζ,dm.m.constant)
   else
     b = -dm.m.constant/abs(dm.m.constant)
     ζ[ζ.==0] = eps();
@@ -531,7 +534,7 @@ function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=fa
     σ = b./ζ
     dσ = -σ./ζ
     ddσ = -2.0*dσ./ζ
-    dz, ddz = evalderiv_exterior(σ,1 .- flipdim(dm.m.angle,1),dm.m.ζ,dm.m.constant)
+    dz, ddz = evalderiv_exterior(σ,1 .- reverse(dm.m.angle, dims = 1),dm.m.ζ,dm.m.constant)
     ddz = ddz.*dσ.^2 + dz.*ddσ
     dz .*= dσ
     return dz, ddz
@@ -613,7 +616,7 @@ julia> prev
  -0.186756+0.982406im
 ```
 """
-parameters(m::ExteriorMap) = flipdim(m.ζ,1), m.constant
+parameters(m::ExteriorMap) = reverse(m.ζ, dims = 1), m.constant
 
 """
     coefficients(m::ConformalMap) -> Tuple{Vector{Complex128},Vector{Complex128}}

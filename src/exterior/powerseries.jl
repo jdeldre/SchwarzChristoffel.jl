@@ -51,8 +51,8 @@ function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
 end
 
 function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
-  dz = zeros(ζs)
-  ddz = zeros(ζs)
+  dz = zero(ζs)
+  ddz = zero(ζs)
   for (i,ζ) in enumerate(ζs)
     dz[i], ddz[i] = dps(ζ)
   end
@@ -82,7 +82,7 @@ of integration and Newton iteration.
    if isempty(ζ0)
      # choose a point on the unit circle
      ζ0 = exp.(im*zeros(lenz))
-     ζ0[isapprox.(angle.(z),π;atol=eps())] = exp(im*π)
+     ζ0[isapprox.(angle.(z),π;atol=eps())] .= exp(im*π)
      dz0,ddz0 = dps(ζ0)
      # check for starting points on edges of the body, and rotate them
      # a bit if so

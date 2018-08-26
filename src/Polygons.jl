@@ -1,6 +1,6 @@
 module Polygons
 
-
+using Statistics: mean
 import Base: length, show, isinf
 
 export Polygon,vertex,interiorangle,isinpoly,naca4
@@ -135,8 +135,8 @@ function interiorangle(w::Vector{ComplexF64})
   beta = fill(NaN,length(w))
   beta[mask] = mod.(angle.( -dw[mask].*conj.(dwshift[mask]) )/π,2)
 
-  mods = abs.(beta+1) .< 1e-12
-  beta[mods] = ones(beta[mods])
+  mods = abs.(beta .+ 1) .< 1e-12
+  beta[mods] = fill!(similar(beta[mods]), 1)
 
   return beta
 
@@ -258,10 +258,10 @@ npan = 2*np-2
 # Trailing edge bunching
 an = 1.5
 anp = an+1
-x = zeros(np)
+x = zero(np)
 
-θ = zeros(size(x))
-yc = zeros(size(x))
+θ = zero(x)
+yc = zero(x)
 
 for j = 1:np
     frac = Float64((j-1)/(np-1))
@@ -279,7 +279,7 @@ for j = 1:np
     end
 end
 
-xu = zeros(size(x))
+xu = zero(x)
 yu = xu
 xl = xu
 yl = yu
@@ -309,8 +309,8 @@ coords = [xu yu xl yl x yc]
 cole = [xlec ylec]
 
 # Close the trailing edge
-xpanold = [0.5*(xl[np]+xu[np]); flipdim(xl[2:np-1],1); xu[1:np-1]]
-ypanold = [0.5*(yl[np]+yu[np]); flipdim(yl[2:np-1],1); yu[1:np-1]]
+xpanold = [0.5*(xl[np]+xu[np]); reverse(xl[2:np-1], dims = 1); xu[1:np-1]]
+ypanold = [0.5*(yl[np]+yu[np]); reverse(yl[2:np-1], dims = 1); yu[1:np-1]]
 
 xpan = zeros(npan)
 ypan = zeros(npan)
@@ -329,7 +329,7 @@ for ipan = 1:npan
     xpan[ipan] = 0.5*(xpan1+xpan2)
     ypan[ipan] = 0.5*(ypan1+ypan2)
 end
-w = ComplexF64[1;flipdim(xpan,1)+im*flipdim(ypan,1)]*len
+w = ComplexF64[1;reverse(xpan, dims = 1)+im*reverse(ypan,dims = 1)]*len
 w -=mean(w)
 return w+Zc
 

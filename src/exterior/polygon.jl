@@ -176,7 +176,7 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    # prevertices
    done = zeros(Bool,size(z))
    for j = 1:n
-     idx = findall(abs.(z-w[j]) .< 3*eps())
+     idx = findall(abs.(z .- w[j]) .< 3*eps())
      ζ[idx] = prev[j]
      done[idx] = true
    end
@@ -260,7 +260,7 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
 
   infty = isinf.(w)
   fwd = circshift(1:n,-1)
-  anchor = zeros(w)
+  anchor = zero(w)
   anchor[.~infty] = w[.~infty]
   anchor[infty] = w[fwd[infty]]
   direcn = exp.(im*argw)
@@ -471,20 +471,20 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
      ζ1k, ζ2k, arg1k, arg2k, sing1k =
           ζ1[k], ζ2[k], argζ1[k], argζ2[k], sing1[k]
      ζs = vcat(ζ[1:sing1k-1],ζ[sing1k+1:end])
-     dist = min(1,2*minimum(abs.(ζs-ζ1k))/abs(ζ2k-ζ1k))
+     dist = min(1,2*minimum(abs.(ζs .- ζ1k))/abs(ζ2k-ζ1k))
      argr = arg1k + dist*(arg2k-arg1k)
      ind = ((sing1k+N) % (N+1)) + 1
      ζnd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
      wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
      θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
-     θ[θ.>π] = 2π-θ[θ.>π]
+     θ[θ.>π] = 2π .- θ[θ.>π]
      terms = 2sin.(0.5θ)
      if !any(terms==0.0)
         if sing1k > 0
-            terms[:,sing1k] ./= abs.(ζnd-arg1k)
+            terms[:,sing1k] ./= abs.(ζnd .- arg1k)
             wt .*= (0.5*abs.(argr-arg1k)).^I.β[sing1k]
         end
-        result[k] = At_mul_B(exp.(log.(terms)*I.β),wt)
+        result[k] = transpose(exp.(log.(terms)*I.β))*wt
         while dist < 1.0
             argl = argr
             ζl = exp(im*argl)
@@ -496,7 +496,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
             θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
             θ[θ.>π] = 2π-θ[θ.>π]
             terms = 2sin.(0.5θ)
-            result[k] += At_mul_B(exp.(log.(terms)*I.β),wt)
+            result[k] += transpose(exp.(log.(terms)*I.β))*wt
         end
      end
    end
@@ -539,7 +539,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
      ζ1k, ζ2k, arg1k, arg2k, sing1k =
           ζ1[k], ζ2[k], argζ1[k], argζ2[k], sing1[k]
      ζs = vcat(ζ[1:sing1k-1],ζ[sing1k+1:end])
-     dist = min(1,2*minimum(abs.(ζs-ζ1k))/abs(ζ2k-ζ1k))
+     dist = min(1,2*minimum(abs.(ζs .- ζ1k))/abs(ζ2k-ζ1k))
      argr = arg1k + dist*(arg2k-arg1k)
      ind = ((sing1k+N) % (N+1)) + 1
      ζnd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
@@ -551,10 +551,10 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
      if !any(terms==0.0)
         #terms = hcat(terms,exp.(im*ζnd))
         if sing1k > 0
-            terms[:,sing1k] ./= abs.(ζnd-arg1k)
+            terms[:,sing1k] ./= abs.(ζnd .- arg1k)
             wt .*= (0.5*abs.(argr-arg1k)).^I.β[sing1k]
         end
-        result[k] = At_mul_B(exp.(log.(terms)*I.β+im*(pow-1)*ζnd),wt)
+        result[k] = transpose(exp.(log.(terms)*I.β+im*(pow-1)*ζnd))*wt
         while dist < 1.0
             argl = argr
             ζl = exp(im*argl)
@@ -568,7 +568,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
             #terms = 2sin.(0.5θ)
             terms = 1 .- exp.(im*θ)
             #terms = hcat(terms,exp.(im*ζnd))
-            result[k] += At_mul_B(exp.(log.(terms)*I.β+im*(pow-1)*ζnd),wt)
+            result[k] += transpose(exp.(log.(terms)*I.β+im*(pow-1)*ζnd))*wt
         end
      end
    end
@@ -623,7 +623,7 @@ k = `pow`.
    for k in nontriv
      ζ1k, ζ2k, sing1k = ζ1[k], ζ2[k], sing1[k]
      ζs = vcat(ζ[1:sing1k-1],ζ[sing1k+1:end])
-     dist = min(1,2*minimum(abs.(ζs-ζ1k))/abs(ζ2k-ζ1k))
+     dist = min(1,2*minimum(abs.(ζs .- ζ1k))/abs(ζ2k-ζ1k))
      ζr = ζ1k + dist*(ζ2k-ζ1k)
      # Choose which type of Gauss-Jacobi weights to use based on whether
      # ζ1k is a prevertex.
@@ -640,7 +640,7 @@ k = `pow`.
             terms[:,sing1k] ./= abs.(terms[:,sing1k])
             wt .*= (0.5*abs.(ζr-ζ1k)).^β[sing1k]
         end
-        result[k] = At_mul_B(exp.(log.(terms)*β),wt)
+        result[k] = transpose(exp.(log.(terms)*β))*wt
 
         while dist < 1.0
             ζl = ζr
@@ -650,7 +650,7 @@ k = `pow`.
             wt = 0.5*(ζr-ζl)*qwght[:,N+1]
             terms = 1 .- ζnd[:,ones(Int,N)]./bigζ
             terms = hcat(terms,ζnd)
-            result[k] += At_mul_B(exp.(log.(terms)*β),wt)
+            result[k] += transpose(exp.(log.(terms)*β))*wt
         end
       end
     end
