@@ -6,3 +6,4 @@ NLsolve
 DifferentialEquations
 RecipesBase
 ColorTypes
+Reexport
