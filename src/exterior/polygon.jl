@@ -28,7 +28,7 @@ the Gauss-Jacobi quadrature data in `qdat`
     else
       ζ0 = ζ0/ζ0[n]
       θ = angle.(ζ0)
-      θ[θ.<=0] = θ[θ.<=0] + 2π
+      θ[θ.<=0] = θ[θ.<=0] .+ 2π
       dt = diff([0;θ[1:n-1];2π])
       @. y0 = log(dt[1:n-1]/dt[2:n])
     end
@@ -92,7 +92,7 @@ function evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
   vertex = (dist[:] .< tol)
   z[vertex] = w[sing[vertex]]
   zerop = abs.(ζ) .< tol
-  z[zerop] = Inf
+  z[zerop] .= Inf
   vertex = vertex .| zerop
 
   # the starting (closest) singularities for each evaluation point
@@ -177,8 +177,8 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    done = zeros(Bool,size(z))
    for j = 1:n
      idx = findall(abs.(z .- w[j]) .< 3*eps())
-     ζ[idx] = prev[j]
-     done[idx] = true
+     ζ[idx] .= prev[j]
+     done[idx] .= true
    end
    lenz -= sum(done)
    if lenz==0
@@ -474,7 +474,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
      dist = min(1,2*minimum(abs.(ζs .- ζ1k))/abs(ζ2k-ζ1k))
      argr = arg1k + dist*(arg2k-arg1k)
      ind = ((sing1k+N) % (N+1)) + 1
-     ζnd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
+     ζnd = 0.5*((argr-arg1k)*qnode[:,ind] .+ argr .+ arg1k)
      wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
      θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
      θ[θ.>π] = 2π .- θ[θ.>π]
@@ -490,7 +490,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
             ζl = exp(im*argl)
             dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
             argr = argl + dist*(arg2k-argl)
-            ζnd = 0.5*((argr-argl)*qnode[:,N+1] + argr + argl)
+            ζnd = 0.5*((argr-argl)*qnode[:,N+1] .+ argr .+ argl)
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
             #θ = hcat([(ζnd - argz[i] + 2π).%(2π) for i = 1:N]...)
             θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
@@ -542,7 +542,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
      dist = min(1,2*minimum(abs.(ζs .- ζ1k))/abs(ζ2k-ζ1k))
      argr = arg1k + dist*(arg2k-arg1k)
      ind = ((sing1k+N) % (N+1)) + 1
-     ζnd = 0.5*((argr-arg1k)*qnode[:,ind] + argr + arg1k)
+     ζnd = 0.5*((argr-arg1k)*qnode[:,ind] .+ argr .+ arg1k)
      wt = 0.5*abs(argr-arg1k)*qwght[:,ind]
      θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
      #θ[θ.>π] = 2π-θ[θ.>π]
@@ -560,7 +560,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
             ζl = exp(im*argl)
             dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
             argr = argl + dist*(arg2k-argl)
-            ζnd = 0.5*((argr-argl)*qnode[:,N+1] + argr + argl)
+            ζnd = 0.5*((argr-argl)*qnode[:,N+1] .+ argr .+ argl)
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
             #θ = hcat([(ζnd - argz[i] + 2π).%(2π) for i = 1:N]...)
             θ = (ζnd[:,ones(Int,N)]-bigargz.+2π).%(2π)
@@ -629,7 +629,7 @@ k = `pow`.
      # ζ1k is a prevertex.
      ind = sing1k + (N+1)*(sing1k==0)
 
-     ζnd = 0.5*((ζr-ζ1k)*qnode[:,ind] + ζr + ζ1k)
+     ζnd = 0.5*((ζr-ζ1k)*qnode[:,ind] .+ ζr .+ ζ1k)
      wt = 0.5*(ζr-ζ1k)*qwght[:,ind]
      terms = 1 .- ζnd[:,ones(Int,N)]./bigζ
      if !any(terms==0.0)
@@ -646,7 +646,7 @@ k = `pow`.
             ζl = ζr
             dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
             ζr = ζl + dist*(ζ2k-ζl)
-            ζnd = 0.5*((ζr-ζl)*qnode[:,N+1] + ζr + ζl)
+            ζnd = 0.5*((ζr-ζl)*qnode[:,N+1] .+ ζr .+ ζl)
             wt = 0.5*(ζr-ζl)*qwght[:,N+1]
             terms = 1 .- ζnd[:,ones(Int,N)]./bigζ
             terms = hcat(terms,ζnd)
@@ -699,8 +699,8 @@ function (R::Depfun{T,N,NQ})(F,y) where {T,N,NQ}
   end
 
   res = -sum(R.β./R.ζ)/R.ints[1]
-  @. F[N-2] = real(res)
-  @. F[N-1] = imag(res)
+  F[N-2] = real(res)
+  F[N-1] = imag(res)
 end
 
 

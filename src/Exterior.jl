@@ -432,7 +432,7 @@ function (m::ExteriorMap)(ζ::Vector{ComplexF64};inside::Bool=false)
             m.ζ,m.constant,m.qdata)
   else
     b = -m.constant/abs(m.constant)
-    ζ[ζ.==0] = eps();
+    ζ[ζ.==0] .= eps();
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 
     σ = b./ζ
@@ -528,7 +528,7 @@ function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=fa
     return evalderiv_exterior(ζ,1 .- reverse(dm.m.angle, dims = 1),dm.m.ζ,dm.m.constant)
   else
     b = -dm.m.constant/abs(dm.m.constant)
-    ζ[ζ.==0] = eps();
+    ζ[ζ.==0] .= eps();
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 
     σ = b./ζ
