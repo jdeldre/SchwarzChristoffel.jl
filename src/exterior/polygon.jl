@@ -81,9 +81,9 @@ function evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
 
   # find the closest prevertices to each evaluation point and their
   #  corresponding distances
-  dz = abs.(ζ[:,ones(Int,n)]-prev[:,ones(Int,neval)].')
+  dz = abs.(repeat(ζ, 1, n) - repeat(transpose(prev), neval))
   #dz = abs.(hcat([ζ for i=1:n]...)-vcat([transpose(prev) for i=1:neval]...))
-  (dist,ind) = findmin(dz,2)
+  (dist,ind) = findmin(dz, dims = 2)
   #sing = floor.(Int,(ind[:]-1)/neval)+1
   sing = [I[2] for I in ind]
 
@@ -193,8 +193,8 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    else
      z0 = evaluate_exterior(ζ0,w,β,prev,c,qdat)
      if length(ζ0)==1 && lenz > 1
-       ζ0 = ζ0[:,ones(Int,lenz)].'
-       z0 = z0[:,ones(Int,lenz)].'
+       ζ0 = repeat(transpose(ζ0), lenz)
+       z0 = repeat(transpose(z0), lenz)
      end
      z0 = z0[.~done]
      ζ0 = ζ0[.~done]
@@ -289,7 +289,7 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
     proj = real.( (zbase-anchor) .* conj.(direcn) )
     zbase = anchor + proj.*direcn
     if isempty(idx)
-      dist,idxtemp = findmin(abs.( z[.~done,ones(Int,n)].' - zbase[:,ones(Int,M)] ),1)
+      dist,idxtemp = findmin(abs.( repeat(transpose(z[.~done]), n) - repeat(zbase, 1, M)), dims = 1)
       for k = 1:M
           push!(idx,idxtemp[k][1])
       end

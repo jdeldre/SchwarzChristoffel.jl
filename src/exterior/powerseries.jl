@@ -92,8 +92,8 @@ of integration and Newton iteration.
    else
      z0 = ps(ζ0)
      if length(ζ0)==1 && lenz > 1
-       ζ0 = ζ0[:,ones(Int,lenz)].'
-       z0 = z0[:,ones(Int,lenz)].'
+       ζ0 = repeat(transpose(ζ0), lenz)
+       z0 = repeat(transpose(z0), lenz)
      end
      z0 = z0[.~done]
      ζ0 = ζ0[.~done]
