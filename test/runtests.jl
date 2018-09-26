@@ -1,4 +1,6 @@
-using Test
+using Compat.Test
+using Compat
+
 using TestSetExtensions
 
 using SchwarzChristoffel

@@ -3,8 +3,10 @@ module Exterior
 using NLsolve
 using DifferentialEquations
 
-using LinearAlgebra
-using Statistics
+using Compat
+using Compat: reverse, repeat, findmin
+using Compat.LinearAlgebra
+using Compat.Statistics
 
 using ..Properties
 using ..Polygons
