@@ -1,8 +1,6 @@
 using Compat.Test
 using Compat
 
-using TestSetExtensions
-
 using SchwarzChristoffel
 
 include("Exterior.jl")

@@ -3,21 +3,21 @@ language: julia
 os:
   - linux
 #  - osx
+
 julia:
   - 0.6
+  - 1.0
   - nightly
-# - release
+
+matrix:
+  allow_failures:
+    - julia: nightly
+
 notifications:
   email: false
 
 env:
   - PYTHON=""
-
-# uncomment the following lines to override the default test script
-#script:
-#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-#  - julia -e 'Pkg.clone(pwd()); Pkg.build("SchwarzChristoffel"); Pkg.test("SchwarzChristoffel"; coverage=true)'
-#
 
 after_success:
   # push coverage results to Coveralls
