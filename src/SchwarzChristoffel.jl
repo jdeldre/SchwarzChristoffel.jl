@@ -4,8 +4,8 @@ module SchwarzChristoffel
 
 using Reexport
 
-include("Properties.jl")
-@reexport using .Properties
+include("MapTypes.jl")
+@reexport using .MapTypes
 
 include("Polygons.jl")
 @reexport using .Polygons
@@ -15,6 +15,7 @@ include("Exterior.jl")
 
 export Polygons, Exterior
 
+# plotting stuff
 include("plot_recipes.jl")
 
 end

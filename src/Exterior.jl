@@ -3,7 +3,7 @@ module Exterior
 using NLsolve
 using DifferentialEquations
 
-using ..Properties
+using ..MapTypes
 using ..Polygons
 
 include("Integration.jl")
