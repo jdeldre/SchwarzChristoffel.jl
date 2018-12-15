@@ -161,6 +161,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "exterior.html#SchwarzChristoffel.Exterior.KarmanTrefftzMap-NTuple{4,Any}",
+    "page": "Exterior map",
+    "title": "SchwarzChristoffel.Exterior.KarmanTrefftzMap",
+    "category": "method",
+    "text": "KarmanTrefftzMap(ν,ϵ,δ,C[;N = 200]) <: ConformalMap\n\nCreate a map from the exterior of the unit circle to the exterior of a Karman-Trefftz airfoil.\n\nThe form of the mapping is\n\nfracz-nu Cz+nu C  =\nleft(fractildezeta-Ctildezeta+Cright)^nu\n\nwhere tildezeta are the coordinates in an intermediate plane, in which the circle is of radius a and centered at epsilon C e^idelta:\n\ntildezeta = epsilon C e^idelta + a zeta\n\nNote that aC geq 1 and is determined by the choices for epsilon and delta.\n\nThe trailing edge angle, (2-nu)pi is specified by nu. The thickness is controlled by epsilon C cosdelta and the camber by epsilon C sindelta. The airfoil chord length is approximately 4C. Generally, epsilon should be much smaller than 1 and delta between pi2 and pi.\n\nThe resulting map m can be evaluated at a single or a vector of points ζ with m(ζ).\n\nExample\n\njulia> ν = 1.9; ϵ = 0.1; δ = π; C = 0.25;\n\njulia> m = KarmanTrefftzMap(ν,ϵ,δ,C)\nKarman-Trefftz map\n\njulia> ζ = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];\n\njulia> m(ζ)\n3-element Array{Complex{Float64},1}:\n   0.268188+0.764722im\n  -0.624265-0.502634im\n -0.0390996+0.126737im\n\n\n\n"
+},
+
+{
     "location": "exterior.html#SchwarzChristoffel.Exterior.PowerMap-Tuple{Array{Complex{Float64},1}}",
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.PowerMap",
@@ -177,7 +185,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "exterior.html#SchwarzChristoffel.Exterior.Jmoment-Tuple{SchwarzChristoffel.Properties.ConformalMap}",
+    "location": "exterior.html#SchwarzChristoffel.Exterior.Jmoment-Tuple{SchwarzChristoffel.MapTypes.ConformalMap}",
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.Jmoment",
     "category": "method",
@@ -185,7 +193,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "exterior.html#SchwarzChristoffel.Exterior.addedmass-Tuple{SchwarzChristoffel.Properties.ConformalMap}",
+    "location": "exterior.html#SchwarzChristoffel.Exterior.addedmass-Tuple{SchwarzChristoffel.MapTypes.ConformalMap}",
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.addedmass",
     "category": "method",
@@ -193,7 +201,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "exterior.html#SchwarzChristoffel.Exterior.area-Tuple{SchwarzChristoffel.Properties.ConformalMap}",
+    "location": "exterior.html#SchwarzChristoffel.Exterior.area-Tuple{SchwarzChristoffel.MapTypes.ConformalMap}",
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.area",
     "category": "method",
@@ -201,7 +209,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "exterior.html#SchwarzChristoffel.Exterior.centroid-Tuple{SchwarzChristoffel.Properties.ConformalMap}",
+    "location": "exterior.html#SchwarzChristoffel.Exterior.centroid-Tuple{SchwarzChristoffel.MapTypes.ConformalMap}",
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.centroid",
     "category": "method",
@@ -209,7 +217,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "exterior.html#SchwarzChristoffel.Exterior.coefficients-Tuple{SchwarzChristoffel.Properties.ConformalMap}",
+    "location": "exterior.html#SchwarzChristoffel.Exterior.coefficients-Tuple{SchwarzChristoffel.MapTypes.ConformalMap}",
     "page": "Exterior map",
     "title": "SchwarzChristoffel.Exterior.coefficients",
     "category": "method",
@@ -233,23 +241,23 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "exterior.html#SchwarzChristoffel.Properties.DerivativeMap-Tuple{}",
+    "location": "exterior.html#SchwarzChristoffel.MapTypes.DerivativeMap-Tuple{}",
     "page": "Exterior map",
-    "title": "SchwarzChristoffel.Properties.DerivativeMap",
+    "title": "SchwarzChristoffel.MapTypes.DerivativeMap",
     "category": "method",
     "text": "DerivativeMap(m::ConformalMap)\n\nConstructs new conformal maps from the first and second derivatives of the conformal map m.\n\nThese new conformal maps can be evaluated at a single or vector of points just as  m is. The first entry in the tuple returned is the first derivative, the second entry is the second derivative.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> dm = DerivativeMap(m);\n\njulia> ζ = [0.1,0.5-0.75im,-0.25-0.3im];\n\njulia> dz, ddz = dm(ζ;inside=true);\n\njulia> dz\n3-element Array{Complex{Float64},1}:\n  67.2068+76.6284im\n -1.11666+0.544576im\n  3.99129-5.30641im\n\n\n\n"
 },
 
 {
-    "location": "exterior.html#SchwarzChristoffel.Properties.InverseMap",
+    "location": "exterior.html#SchwarzChristoffel.MapTypes.InverseMap",
     "page": "Exterior map",
-    "title": "SchwarzChristoffel.Properties.InverseMap",
+    "title": "SchwarzChristoffel.MapTypes.InverseMap",
     "category": "type",
     "text": "InverseMap(m::ConformalMap)\n\nConstructs the inverse conformal map of the conformal map m.\n\nThis inverse conformal map can be evaluated at a single or vector of points. Points should be outside the body. Whether the resulting point in the circle plane is interpreted inside or outside the circle is determined by the optional argument inside, which defaults to false.\n\nExample\n\njulia> p = Polygon([-1.0,0.2,1.0,-1.0],[-1.0,-1.0,0.5,1.0]);\n\njulia> m = ExteriorMap(p);\n\njulia> m⁻¹ = InverseMap(m);\n\njulia> ζ = [1.0+3.0im,-2.0-2.0im,0.1+1.1im];\n\njulia> m⁻¹(m(ζ))\n3-element Array{Complex{Float64},1}:\n  1.0+3.0im\n -2.0-2.0im\n  0.1+1.1im\n\n\n\n"
 },
 
 {
-    "location": "exterior.html#Base.length-Tuple{SchwarzChristoffel.Properties.ConformalMap}",
+    "location": "exterior.html#Base.length-Tuple{SchwarzChristoffel.MapTypes.ConformalMap}",
     "page": "Exterior map",
     "title": "Base.length",
     "category": "method",
