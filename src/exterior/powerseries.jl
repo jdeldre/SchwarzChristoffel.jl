@@ -41,7 +41,7 @@ function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
   C = dps.ps.ccoeff
   dz = C[1]
   ζⁿ = 1/ζ^2
-  ddz = Complex128(0)
+  ddz = ComplexF64(0)
   for n in 1:length(C)-2
     dz -= n*C[n+2]*ζⁿ
     ζⁿ /= ζ
@@ -51,22 +51,22 @@ function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
 end
 
 function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
-  dz = zeros(ζs)
-  ddz = zeros(ζs)
+  dz = zero(ζs)
+  ddz = zero(ζs)
   for (i,ζ) in enumerate(ζs)
     dz[i], ddz[i] = dps(ζ)
   end
   return dz, ddz
 end
 
-function evalinv_exterior(z::Vector{Complex128},ps::PowerSeries,
+function evalinv_exterior(z::Vector{ComplexF64},ps::PowerSeries,
                                 dps::PowerSeriesDerivatives)
 #=
 Evaluates the inverse of the exterior power series mapping, using a combination
 of integration and Newton iteration.
 =#
 
-   ζ = zeros(Complex128,size(z))
+   ζ = zeros(ComplexF64,size(z))
    lenz = length(z)
    ζ0 = []
    maxiter = 10
@@ -82,7 +82,7 @@ of integration and Newton iteration.
    if isempty(ζ0)
      # choose a point on the unit circle
      ζ0 = exp.(im*zeros(lenz))
-     ζ0[isapprox.(angle.(z),π;atol=eps())] = exp(im*π)
+     ζ0[isapprox.(angle.(z),π;atol=eps())] .= exp(im*π)
      dz0,ddz0 = dps(ζ0)
      # check for starting points on edges of the body, and rotate them
      # a bit if so
@@ -92,8 +92,8 @@ of integration and Newton iteration.
    else
      z0 = ps(ζ0)
      if length(ζ0)==1 && lenz > 1
-       ζ0 = ζ0[:,ones(Int,lenz)].'
-       z0 = z0[:,ones(Int,lenz)].'
+       ζ0 = repeat(transpose(ζ0), lenz)
+       z0 = repeat(transpose(z0), lenz)
      end
      z0 = z0[.~done]
      ζ0 = ζ0[.~done]

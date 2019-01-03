@@ -1,6 +1,7 @@
 module Polygons
 
-
+using Compat
+using Compat.Statistics: mean
 import Base: length, show, isinf
 
 export Polygon,vertex,interiorangle,isinpoly,naca4
@@ -21,7 +22,7 @@ Polygon with 4 vertices at
 ```
 """
 struct Polygon
-  vert :: Vector{Complex128}
+  vert :: Vector{ComplexF64}
   angle :: Vector{Float64}
 
   Polygon(vert,angle) = abs(vert[end]-vert[1])<eps() ? new(vert[1:end-1],angle) : new(vert,angle)
@@ -48,7 +49,7 @@ Polygon with 4 vertices at
              interior angles/π = [0.5, 0.656, 0.422, 0.422]
 ```
 """
-Polygon(w::Vector{Complex128}) = Polygon(w,interiorangle(w))
+Polygon(w::Vector{ComplexF64}) = Polygon(w,interiorangle(w))
 
 """
     vertex(p::Polygon) -> Vector{Complex128}
@@ -122,7 +123,7 @@ julia> interiorangle(p)
 """
 interiorangle(p::Polygon) = length(p.angle) != 0 ? p.angle : interiorangle(p.vertex)
 
-function interiorangle(w::Vector{Complex128})
+function interiorangle(w::Vector{ComplexF64})
   if length(w)==0
     return []
   end
@@ -135,15 +136,15 @@ function interiorangle(w::Vector{Complex128})
   beta = fill(NaN,length(w))
   beta[mask] = mod.(angle.( -dw[mask].*conj.(dwshift[mask]) )/π,2)
 
-  mods = abs.(beta+1) .< 1e-12
-  beta[mods] = ones(beta[mods])
+  mods = abs.(beta .+ 1) .< 1e-12
+  beta[mods] = fill!(similar(beta[mods]), 1)
 
   return beta
 
 end
 
 
-function isinpoly(z::Complex128,w::Vector{Complex128},beta::Vector{Float64},tol)
+function isinpoly(z::ComplexF64,w::Vector{ComplexF64},beta::Vector{Float64},tol)
 
   index = 0.0
 
@@ -159,7 +160,7 @@ function isinpoly(z::Complex128,w::Vector{Complex128},beta::Vector{Float64},tol)
   tangents = sign.(circshift(w,-1)-w)
 
   # Search for repeated points and fix these tangents
-  for p = find( tangents .== 0 )
+  for p = findall( tangents .== 0 )
     v = [w[p+1:end];w]
     tangents[p] = sign(v[findfirst(v.!=w[p])]-w[p])
   end
@@ -258,10 +259,10 @@ npan = 2*np-2
 # Trailing edge bunching
 an = 1.5
 anp = an+1
-x = zeros(np)
+x = zero(np)
 
-θ = zeros(size(x))
-yc = zeros(size(x))
+θ = zero(x)
+yc = zero(x)
 
 for j = 1:np
     frac = Float64((j-1)/(np-1))
@@ -279,7 +280,7 @@ for j = 1:np
     end
 end
 
-xu = zeros(size(x))
+xu = zero(x)
 yu = xu
 xl = xu
 yl = yu
@@ -309,8 +310,8 @@ coords = [xu yu xl yl x yc]
 cole = [xlec ylec]
 
 # Close the trailing edge
-xpanold = [0.5*(xl[np]+xu[np]); flipdim(xl[2:np-1],1); xu[1:np-1]]
-ypanold = [0.5*(yl[np]+yu[np]); flipdim(yl[2:np-1],1); yu[1:np-1]]
+xpanold = [0.5*(xl[np]+xu[np]); reverse(xl[2:np-1], dims = 1); xu[1:np-1]]
+ypanold = [0.5*(yl[np]+yu[np]); reverse(yl[2:np-1], dims = 1); yu[1:np-1]]
 
 xpan = zeros(npan)
 ypan = zeros(npan)
@@ -329,7 +330,7 @@ for ipan = 1:npan
     xpan[ipan] = 0.5*(xpan1+xpan2)
     ypan[ipan] = 0.5*(ypan1+ypan2)
 end
-w = Complex128[1;flipdim(xpan,1)+im*flipdim(ypan,1)]*len
+w = ComplexF64[1;reverse(xpan, dims = 1)+im*reverse(ypan,dims = 1)]*len
 w -=mean(w)
 return w+Zc
 
