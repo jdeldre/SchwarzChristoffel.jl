@@ -1,12 +1,15 @@
-using Base.Test
-using TestSetExtensions
+using Compat.Test
+using Compat
 
 using SchwarzChristoffel
 
-@testset ExtendedTestSet "All tests" begin
-  @includetests ARGS
-end
+include("Exterior.jl")
+include("Polygons.jl")
 
-if isempty(ARGS)
-    include("../docs/make.jl")
-end
+#@testset ExtendedTestSet "All tests" begin
+#  @includetests ARGS
+#end
+
+# if isempty(ARGS)
+#     include("../docs/make.jl")
+# end
