@@ -62,7 +62,7 @@ end
 circle(N) = [exp(im*2π*(i-1)/N) for i in 1:N]
 
 doc"""
-    PowerMap(c::Vector{Complex128}[;N = 200]) <: ConformalMap
+    PowerMap(c::Vector{ComplexF64}[;N = 200]) <: ConformalMap
 
 Create a power series map from the exterior of the unit
 circle to the exterior of a shape defined by the power series coefficients `c`.
@@ -207,19 +207,19 @@ struct KarmanTrefftzMap <: ConformalMap
   ps::PowerSeries
 
   "control point coordinates in circle space"
-  ζ::Vector{Complex128}
+  ζ::Vector{ComplexF64}
 
   "control point coordinates in body-fixed space"
-  z::Vector{Complex128}
+  z::Vector{ComplexF64}
 
   "map Jacobian in body-fixed coordinates"
-  dzdζ::Vector{Complex128}
+  dzdζ::Vector{ComplexF64}
 
   "Area enclosed by the mapped shape"
   area      :: Float64
 
   "Centroid of the mapped shape"
-  Zc        :: Complex128
+  Zc        :: ComplexF64
 
   "2nd area moment of the mapped shape"
   J         :: Float64
@@ -282,7 +282,7 @@ function KarmanTrefftzMap(ν,ϵ,δ,C; N::Int = 200)
 
   # Compute power series coefficients
   ncoeff = 4
-  ccoeff = zeros(Complex128,ncoeff)
+  ccoeff = zeros(ComplexF64,ncoeff)
   ccoeff[1] = a
   ccoeff[2] = μ
   ccoeff[3] = (ν^2-1)*C/(3*a_C)
@@ -787,7 +787,7 @@ Base.length(m::ConformalMap) = m.N
 
 
 """
-    parameters(m::ExteriorMap) -> Tuple{Vector{Complex128},Complex128}
+    parameters(m::ExteriorMap) -> Tuple{Vector{ComplexF64},ComplexF64}
 
 Returns a tuple of a vector of the prevertices and the complex factor of
 the exterior polygon mapping `m`.
@@ -812,7 +812,7 @@ julia> prev
 parameters(m::ExteriorMap) = reverse(m.ζ, dims = 1), m.constant
 
 """
-    coefficients(m::ConformalMap) -> Tuple{Vector{Complex128},Vector{Complex128}}
+    coefficients(m::ConformalMap) -> Tuple{Vector{ComplexF64},Vector{ComplexF64}}
 
 Returns a tuple of vectors of the complex coefficients of the multipole
 expansion of the mapping \$z(\\zeta)\$ described by `m` as well as the
@@ -831,7 +831,7 @@ julia> ccoeff, dcoeff = coefficients(m);
 coefficients(m::ConformalMap) = m.ps.ccoeff, m.ps.dcoeff
 
 """
-    moments(m::ExteriorMap) -> Vector{Complex128}
+    moments(m::ExteriorMap) -> Vector{ComplexF64}
 
 Return the moments of the prevertices for exterior polygon mapping `m`.
 
@@ -877,7 +877,7 @@ area(m::ConformalMap) = m.area
 
 
 """
-    centroid(m::ConformalMap) -> Complex128
+    centroid(m::ConformalMap) -> ComplexF64
 
 Returns the complex centroid position of the shape described by the
 mapping `m`.
