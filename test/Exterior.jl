@@ -116,3 +116,22 @@ end
   @test m(m⁻¹(z)) ≈ z
 
 end
+
+@testset "Karman-Trefftz map" begin
+  ν = 1.94; ϵ = 0.08*sqrt(2); δ = 3π/4; C = 0.25;
+  m = SchwarzChristoffel.KarmanTrefftzMap(ν,ϵ,δ,C)
+  @test area(m) ≈ 0.08510380847113
+  @test centroid(m) ≈ -0.0796138968044 + 0.0271627776676im
+  @test Jmoment(m) ≈ 0.00538941353392
+
+  zeta = [1.0+3.0im,-2.0-2.0im,0.0+1.1im]
+  z = m(zeta)
+  @test isapprox(z,Complex128[0.269784+0.768849im,
+                      -0.616452-0.470251im,
+                      -0.0310697+0.138951im];atol=1e-5)
+
+  m⁻¹ = SchwarzChristoffel.InverseMap(m)
+  @test isapprox(m⁻¹(m(zeta)),zeta;atol=eps())
+
+
+end

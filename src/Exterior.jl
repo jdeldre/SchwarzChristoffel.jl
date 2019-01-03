@@ -8,7 +8,7 @@ using Compat: reverse, repeat, findmin
 using Compat.LinearAlgebra
 using Compat.Statistics
 
-using ..Properties
+using ..MapTypes
 using ..Polygons
 
 include("Integration.jl")
@@ -18,6 +18,7 @@ include("Reindex.jl")
 using .Reindex
 
 export PowerSeries,PowerSeriesDerivatives,PowerMap,ExteriorMap,
+        KarmanTrefftzMap,JoukowskiMap,
         summary,parameters,coefficients,
         moments,area,centroid,Jmoment,addedmass
 
@@ -166,13 +167,203 @@ function shape_moments(ps::PowerSeries)
   else
     Zc = ComplexF64(0)
   end
-  J = Float64(-0.5π*c(-k)'*d(-kml)*(l.*c(-l)))
+  J = real(-0.5π*c(-k)'*d(-kml)*(l.*c(-l)))
 
   return area, Zc, J
 end
 
+#=  Karman-Trefftz map from unit circle to airfoil
+  This is actually a composition of maps, first from the unit circle in the ζ
+  plane to a circle of radius a at center ϵCexp(iδ) in the ζ̃ plane. The mapping is
+  (z-νC)/(z+νC) = ((ζ̃-C)/(ζ̃+C))^ν. This gives an interior angle at the
+  trailing edge (ζ̃ = C) of angle (2-ν)π. Note that ζ̃ = ϵCexp(iδ) + aζ.
+  The basic Joukowski airfoil is specified by ν = 2.
 
-#=   Exterior map from to polygon  =#
+=#
+struct KarmanTrefftzMap <: ConformalMap
+
+  "K-T power ν, generally <∼ 2"
+  nu::Real
+
+  "Displacement of circle from origin, as fraction of C. Should be smaller than ~0.2."
+  epsilon::Real
+
+  "Angular orientation of circle, π/2 <= δ <= π"
+  delta::Real
+
+  "Scaling factor C. Airfoil chord is approximately 4C"
+  C::Real
+
+  "number of plotting control points"
+  N::Int
+
+  "radius of circle in ζ̃ plane"
+  a::Real
+
+  "center of circle in ζ̃ plane"
+  mu::Number
+
+  "Power series"
+  ps::PowerSeries
+
+  "control point coordinates in circle space"
+  ζ::Vector{Complex128}
+
+  "control point coordinates in body-fixed space"
+  z::Vector{Complex128}
+
+  "map Jacobian in body-fixed coordinates"
+  dzdζ::Vector{Complex128}
+
+  "Area enclosed by the mapped shape"
+  area      :: Float64
+
+  "Centroid of the mapped shape"
+  Zc        :: Complex128
+
+  "2nd area moment of the mapped shape"
+  J         :: Float64
+
+  "Added mass tensor"
+  Ma        :: Array{Float64,2}
+
+end
+
+doc"""
+    KarmanTrefftzMap(ν,ϵ,δ,C[;N = 200]) <: ConformalMap
+
+Create a map from the exterior of the unit
+circle to the exterior of a Karman-Trefftz airfoil.
+
+The form of the mapping is
+
+```math
+\frac{z-\nu C}{z+\nu C}  =
+\left(\frac{\tilde{\zeta}-C}{\tilde{\zeta}+C}\right)^\nu
+```
+where $\tilde{\zeta}$ are the coordinates in an intermediate plane, in which
+the circle is of radius $a$ and centered at $\epsilon C e^{i\delta}$:
+```math
+\tilde{\zeta} = \epsilon C e^{i\delta} + a \zeta
+```
+Note that $a/C \geq 1$ and is determined by the choices for $\epsilon$ and $\delta$.
+
+The trailing edge angle, $(2-\nu)\pi$ is specified by $\nu$. The thickness
+is controlled by $\epsilon C \cos\delta$ and the camber by $\epsilon C \sin\delta$.
+The airfoil chord length is approximately $4C$. Generally, $\epsilon$ should be
+much smaller than 1 and $\delta$ between $\pi/2$ and $\pi$.
+
+The resulting map `m` can be evaluated at a single or a vector of points `ζ`
+with `m(ζ)`.
+
+# Example
+
+```jldoctest
+julia> ν = 1.9; ϵ = 0.1; δ = π; C = 0.25;
+
+julia> m = KarmanTrefftzMap(ν,ϵ,δ,C)
+Karman-Trefftz map
+
+julia> ζ = [1.0+3.0im,-2.0-2.0im,0.0+1.1im];
+
+julia> m(ζ)
+3-element Array{Complex{Float64},1}:
+   0.268188+0.764722im
+  -0.624265-0.502634im
+ -0.0390996+0.126737im
+```
+"""
+function KarmanTrefftzMap(ν,ϵ,δ,C; N::Int = 200)
+
+  β = atan(ϵ*sin(δ)/(1-ϵ*cos(δ)))
+  a_C = cos(β) + sqrt(ϵ^2-sin(β)^2)
+  a = a_C*C
+  μ = ϵ*C*exp(im*δ)
+
+  # Compute power series coefficients
+  ncoeff = 4
+  ccoeff = zeros(Complex128,ncoeff)
+  ccoeff[1] = a
+  ccoeff[2] = μ
+  ccoeff[3] = (ν^2-1)*C/(3*a_C)
+  ccoeff[4] = -ccoeff[3]*μ/a
+
+  # Coefficients of |z(ζ)|²
+  # dcoeff[1] = d₀, dcoeff[2] = d₋₁, etc.
+  # Note that d₁ = conj(d₋₁) = conj(dcoeff[2]), d₂ = conj(d₋₂) = conj(dcoeff[3])
+  dcoeff = [dot(ccoeff,ccoeff)]
+  for k = 1:ncoeff+1
+      push!(dcoeff,dot(ccoeff[1:end-k],ccoeff[k+1:end]))
+  end
+  ps = PowerSeries(ccoeff,dcoeff)
+
+  ζ = circle(N)
+  ζ̃ = similar(ζ)
+  z = similar(ζ)
+  dzdζ = similar(ζ)
+
+  @. ζ̃ = μ + a*ζ
+  @. z = ν*C*((ζ̃+C)^ν+(ζ̃-C)^ν)/((ζ̃+C)^ν-(ζ̃-C)^ν)
+  @. dzdζ = 4ν^2*C^2*a*(ζ̃^2-C^2)^(ν-1)/((ζ̃+C)^ν-(ζ̃-C)^ν)^2
+
+  area, Zc, J = shape_moments(ps)
+
+  Ma = addedmass(ps,area)
+
+  KarmanTrefftzMap(ν,ϵ,δ,C,N,a,μ,ps,ζ,z,dzdζ,area, Zc, J, Ma)
+end
+
+JoukowskiMap(y...;x...) = KarmanTrefftzMap(2,y...;x...)
+
+
+function (m::KarmanTrefftzMap)(ζ::Number)
+  ζ̃ = m.mu + m.a*ζ
+  return m.nu*m.C*((ζ̃+m.C)^m.nu+(ζ̃-m.C)^m.nu)/((ζ̃+m.C)^m.nu-(ζ̃-m.C)^m.nu)
+end
+
+function (minv::InverseMap{KarmanTrefftzMap})(z::Number)
+  ζ̃ = minv.m.C*((z+minv.m.nu*minv.m.C)^(1/minv.m.nu)+(z-minv.m.nu*minv.m.C)^(1/minv.m.nu))/
+           ((z+minv.m.nu*minv.m.C)^(1/minv.m.nu)-(z-minv.m.nu*minv.m.C)^(1/minv.m.nu))
+  return  (ζ̃ - minv.m.mu)/minv.m.a
+end
+
+function (dm::DerivativeMap{KarmanTrefftzMap})(ζ::Number)
+  ζ̃ = dm.m.mu + dm.m.a*ζ
+  return 4dm.m.nu^2*dm.m.C^2*dm.m.a*(ζ̃^2-dm.m.C^2)^(dm.m.nu-1)/
+                      ((ζ̃+dm.m.C)^dm.m.nu-(ζ̃-dm.m.C)^dm.m.nu)^2
+end
+
+(m::KarmanTrefftzMap)(ζ::Vector{T}) where T<:Number = m.(ζ)
+
+(minv::InverseMap{KarmanTrefftzMap})(z::Vector{T}) where T<:Number = minv.(z)
+
+
+(dm::DerivativeMap{KarmanTrefftzMap})(ζ::Vector{T}) where T<:Number = dm.(ζ)
+
+
+function Base.show(io::IO, m::KarmanTrefftzMap)
+    if m.nu == 2
+      println(io, "Joukowski map")
+    else
+      println(io, "Karman-Trefftz map")
+    end
+end
+
+function Base.summary(m::KarmanTrefftzMap)
+  println("Karman-Trefftz map of unit circle to exterior of airfoil")
+  print("   ")
+  print("circle center: ")
+  println("($(round(m.epsilon*cos(m.delta),4)),$(round(m.epsilon*sin(m.delta),4)))")
+  print("   ")
+  print("chord length: ")
+  println("$(4*m.C)")
+  print("   ")
+  print("trailing edge angle (deg): ")
+  println("$(round((2-m.nu)*180,4))")
+end
+
+
+#=   Exterior map from circle to polygon  =#
 
 struct ExteriorMap <: ConformalMap
 
