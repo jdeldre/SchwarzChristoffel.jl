@@ -61,7 +61,7 @@ end
 
 circle(N) = [exp(im*2π*(i-1)/N) for i in 1:N]
 
-doc"""
+@doc raw"""
     PowerMap(c::Vector{ComplexF64}[;N = 200]) <: ConformalMap
 
 Create a power series map from the exterior of the unit
@@ -229,7 +229,7 @@ struct KarmanTrefftzMap <: ConformalMap
 
 end
 
-doc"""
+@doc raw"""
     KarmanTrefftzMap(ν,ϵ,δ,C[;N = 200]) <: ConformalMap
 
 Create a map from the exterior of the unit
@@ -242,16 +242,16 @@ The form of the mapping is
 \left(\frac{\tilde{\zeta}-C}{\tilde{\zeta}+C}\right)^\nu
 ```
 where $\tilde{\zeta}$ are the coordinates in an intermediate plane, in which
-the circle is of radius $a$ and centered at $\epsilon C e^{i\delta}$:
+the circle is of radius ``a`` and centered at ``\epsilon C e^{i\delta}``:
 ```math
 \tilde{\zeta} = \epsilon C e^{i\delta} + a \zeta
 ```
-Note that $a/C \geq 1$ and is determined by the choices for $\epsilon$ and $\delta$.
+Note that ``a/C \geq 1`` and is determined by the choices for ``\epsilon`` and ``\delta``.
 
-The trailing edge angle, $(2-\nu)\pi$ is specified by $\nu$. The thickness
-is controlled by $\epsilon C \cos\delta$ and the camber by $\epsilon C \sin\delta$.
-The airfoil chord length is approximately $4C$. Generally, $\epsilon$ should be
-much smaller than 1 and $\delta$ between $\pi/2$ and $\pi$.
+The trailing edge angle, ``(2-\nu)\pi`` is specified by ``\nu``. The thickness
+is controlled by ``\epsilon C \cos\delta`` and the camber by ``\epsilon C \sin\delta``.
+The airfoil chord length is approximately ``4C``. Generally, ``\epsilon`` should be
+much smaller than 1 and ``\delta`` between ``\pi/2`` and ``\pi``.
 
 The resulting map `m` can be evaluated at a single or a vector of points `ζ`
 with `m(ζ)`.
@@ -272,7 +272,7 @@ julia> m(ζ)
   -0.624265-0.502634im
  -0.0390996+0.126737im
 ```
-"""
+""" KarmanTrefftzMap
 function KarmanTrefftzMap(ν,ϵ,δ,C; N::Int = 200)
 
   β = atan(ϵ*sin(δ)/(1-ϵ*cos(δ)))
