@@ -57,7 +57,7 @@ end
 circle(N) = [exp(im*2π*(i-1)/N) for i in 1:N]
 
 doc"""
-    PowerMap(c::Vector{Complex12}[;N = 200]) <: ConformalMap
+    PowerMap(c::Vector{Complex128}[;N = 200]) <: ConformalMap
 
 Create a power series map from the exterior of the unit
 circle to the exterior of a shape defined by the power series coefficients `c`.
