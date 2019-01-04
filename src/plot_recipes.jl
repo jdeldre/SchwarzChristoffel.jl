@@ -1,5 +1,7 @@
+@reexport using Compat
 @reexport using RecipesBase
 @reexport using ColorTypes
+using Compat.range
 
 const mygreen = RGBA{Float64}(151/255,180/255,118/255,1)
 const mygreen2 = RGBA{Float64}(113/255,161/255,103/255,1)
@@ -46,7 +48,7 @@ end
   dθ = 2π/nθ
   θg = 0
   nrg = 100
-  rg = linspace(1,rmax,nrg)
+  rg = range(1,stop=rmax,length=nrg)
   for jθ in 1:nθ
     ζg = collect(rg*exp(im*θg))
     zg = m(ζg)
@@ -71,7 +73,7 @@ end
   rg = 1
 
   nθg = 241
-  θg = linspace(0,2π,nθg)
+  θg = range(0,stop=2π,length=nθg)
   for jr in 1:nr
     ζg = collect(rg*exp.(im*θg));
     zg = m(ζg)
