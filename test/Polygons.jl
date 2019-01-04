@@ -10,3 +10,11 @@
   beta = SchwarzChristoffel.interiorangle(p)
   @test beta[1] ≈ 0.5
 end
+
+@testset "NACA airfoil" begin
+
+  w = SchwarzChristoffel.naca4(0.04,0.4,0.12;len=1)
+  p = SchwarzChristoffel.Polygon(w)
+  @test p.angle[1] ≈ 0.1130140167872078
+
+end

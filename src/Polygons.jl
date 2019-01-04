@@ -2,6 +2,7 @@ module Polygons
 
 using Compat
 using Compat.Statistics: mean
+using Compat: reverse
 import Base: length, show, isinf
 
 export Polygon,vertex,interiorangle,isinpoly,naca4
@@ -249,7 +250,7 @@ julia> w = naca4(0.0,0.0,0.12);
 julia> p = Polygon(w);
 ```
 """
-function Polygons.naca4(cam::Number,pos::Number,t::Number;np=20,Zc=0.0+0.0im,len=1.0)
+function naca4(cam::Number,pos::Number,t::Number;np=20,Zc=0.0+0.0im,len=1.0)
 
 # Here, cam is the fractional camber, pos is the fractional chordwise position
 # of max camber, and t is the fractional thickness.
