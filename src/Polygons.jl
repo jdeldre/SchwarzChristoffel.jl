@@ -249,7 +249,7 @@ julia> w = naca4(0.0,0.0,0.12);
 julia> p = Polygon(w);
 ```
 """
-function naca4(cam::Number,pos::Number,t::Number;np=20,Zc=0.0+0.0im,len=1.0)
+function Polygons.naca4(cam::Number,pos::Number,t::Number;np=20,Zc=0.0+0.0im,len=1.0)
 
 # Here, cam is the fractional camber, pos is the fractional chordwise position
 # of max camber, and t is the fractional thickness.
@@ -259,7 +259,7 @@ npan = 2*np-2
 # Trailing edge bunching
 an = 1.5
 anp = an+1
-x = zero(np)
+x = zeros(np)
 
 θ = zero(x)
 yc = zero(x)
@@ -302,8 +302,8 @@ end
 xrc = rt*cos(θ0)
 yrc = rt*sin(θ0)
 θle = collect(0:π/50:2π)
-xlec = xrc+rt*cos.(θle)
-ylec = yrc+rt*sin.(θle)
+xlec = xrc .+ rt*cos.(θle)
+ylec = yrc .+ rt*sin.(θle)
 
 # Assemble data
 coords = [xu yu xl yl x yc]
@@ -331,8 +331,8 @@ for ipan = 1:npan
     ypan[ipan] = 0.5*(ypan1+ypan2)
 end
 w = ComplexF64[1;reverse(xpan, dims = 1)+im*reverse(ypan,dims = 1)]*len
-w -=mean(w)
-return w+Zc
+w .-= sum(w)/length(w)
+return w .+ Zc
 
 end
 
@@ -344,7 +344,7 @@ function show(io::IO, p::Polygon)
         print(io,"($(real(p.vert[i])),$(imag(p.vert[i]))) ")
     end
     println(io)
-    println(io, "             interior angles/π = $(round.(p.angle, 3))")
+    println(io, "             interior angles/π = $(round.(p.angle, digits=3))")
 end
 
 end
