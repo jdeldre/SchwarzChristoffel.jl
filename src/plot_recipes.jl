@@ -20,13 +20,13 @@ end
 
 @recipe function plot(m::ConformalMap)
 
-  xmax = pop!(d, :xmax, nothing)
+  xmax = pop!(plotattributes, :xmax, nothing)
   xmaxc =  xmax == nothing ? 4.0 : xmax
 
-  nspokes = pop!(d, :nspokes, nothing)
+  nspokes = pop!(plotattributes, :nspokes, nothing)
   nθ =  nspokes == nothing ? 20 : nspokes
 
-  nrings = pop!(d, :nrings, nothing)
+  nrings = pop!(plotattributes, :nrings, nothing)
   nr =  nrings == nothing ? 10 : nrings
 
   rmax = sqrt(2)*xmaxc
