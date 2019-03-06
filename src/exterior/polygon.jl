@@ -294,7 +294,7 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
           push!(idx,idxtemp[k][1])
       end
     else
-      idx[.~done] = idx[.~done].%n + 1
+      idx[.~done] = idx[.~done].%n .+ 1
     end
     ζ0[.~done] = ζbase[idx[.~done]]
     z0[.~done] = zbase[idx[.~done]]
