@@ -644,7 +644,7 @@ k = `pow`.
 
         while dist < 1.0
             ζl = ζr
-            dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
+            dist = min(1,2*minimum(abs.(ζ .- ζl)/abs(ζl-ζ2k)))
             ζr = ζl + dist*(ζ2k-ζl)
             ζnd = 0.5*((ζr-ζl)*qnode[:,N+1] .+ ζr .+ ζl)
             wt = 0.5*(ζr-ζl)*qwght[:,N+1]
