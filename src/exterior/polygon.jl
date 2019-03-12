@@ -494,7 +494,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
             #θ = hcat([(ζnd - argz[i] + 2π).%(2π) for i = 1:N]...)
             θ = (repeat(ζnd, 1, N) .- bigargz .+ 2π).%(2π)
-            θ[θ.>π] = 2π-θ[θ.>π]
+            θ[θ.>π] = 2π .- θ[θ.>π]
             terms = 2sin.(0.5θ)
             result[k] += transpose(exp.(log.(terms)*I.β))*wt
         end
