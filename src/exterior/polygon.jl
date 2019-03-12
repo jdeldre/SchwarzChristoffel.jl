@@ -488,7 +488,7 @@ to, or 0 if `ζ1` is not a prevertex. Note that `ζ2` cannot be a prevertex.
         while dist < 1.0
             argl = argr
             ζl = exp(im*argl)
-            dist = min(1,2*minimum(abs.(ζ-ζl)/abs(ζl-ζ2k)))
+            dist = min(1,2*minimum(abs.(ζ .- ζl)/abs(ζl-ζ2k)))
             argr = argl + dist*(arg2k-argl)
             ζnd = 0.5*((argr-argl)*qnode[:,N+1] .+ argr .+ argl)
             wt = 0.5*abs(argr-argl)*qwght[:,N+1]
