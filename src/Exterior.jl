@@ -1,7 +1,8 @@
 module Exterior
 
 using NLsolve
-using DifferentialEquations
+#using DifferentialEquations
+using OrdinaryDiffEq # using this module to reduce slow precompile of full DifferentialEquations package
 
 using Compat
 using Compat: reverse, repeat, findmin
