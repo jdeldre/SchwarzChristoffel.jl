@@ -37,15 +37,8 @@ The engine for constructing the mapping and its inverse is based on the work of 
 
 ## Installation
 
-This package requires Julia `0.6-` and above.
-It is a registered package, so it should be installed with:
-```julia
-julia> Pkg.add("SchwarzChristoffel")
-```
-Since it is still under development, you should run
-```julia
-julia> Pkg.update()
-```
-to get the most recent version of the library and its dependencies.
+This package requires Julia `1.0` and above.
+It is a registered package, so it should be installed with `add SchwarzChristoffel`
+at the package manager prompt.
 
 Examples can be found in the [documentation](https://jdeldre.github.io/SchwarzChristoffel.jl).
