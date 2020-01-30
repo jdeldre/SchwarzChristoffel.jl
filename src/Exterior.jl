@@ -4,10 +4,13 @@ using NLsolve
 #using DifferentialEquations
 using OrdinaryDiffEq # using this module to reduce slow precompile of full DifferentialEquations package
 
-using Compat
-using Compat: reverse, repeat, findmin
-using Compat.LinearAlgebra
-using Compat.Statistics
+#using Compat
+#using Compat: reverse, repeat, findmin
+#using Compat.LinearAlgebra
+#using Compat.Statistics
+
+using LinearAlgebra
+using Statistics
 
 using ..MapTypes
 using ..Polygons

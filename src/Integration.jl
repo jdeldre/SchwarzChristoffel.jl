@@ -1,6 +1,6 @@
 module Integration
 
-using Compat
+#using Compat
 using FastGaussQuadrature
 
 export qdata

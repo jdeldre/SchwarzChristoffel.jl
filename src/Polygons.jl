@@ -1,8 +1,9 @@
 module Polygons
 
-using Compat
-using Compat.Statistics: mean
-using Compat: reverse
+#using Compat
+#using Compat.Statistics: mean
+#using Compat: reverse
+using Statistics
 import Base: length, show, isinf
 
 export Polygon,vertex,interiorangle,isinpoly,naca4

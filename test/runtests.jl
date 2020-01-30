@@ -1,7 +1,9 @@
-using Compat.Test
-using Compat
+#using Compat.Test
+#using Compat
+
 
 using SchwarzChristoffel
+using Test
 
 include("Exterior.jl")
 include("Polygons.jl")
