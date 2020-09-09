@@ -20,7 +20,7 @@ ColorTypes = "^0"
 FastGaussQuadrature = "^0"
 NLsolve = "^4"
 OrdinaryDiffEq = "^5"
-RecipesBase = "^0"
+RecipesBase = "< 2"
 Reexport = "^0"
 
 [extras]
