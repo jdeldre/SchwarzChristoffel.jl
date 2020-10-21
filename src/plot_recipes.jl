@@ -12,7 +12,7 @@ const myblue = RGBA{Float64}(74/255,144/255,226/255,1)
     linecolor --> mygreen
     fillrange --> 0
     fillcolor --> mygreen
-    ratio := 1
+    aspect_ratio := 1
     legend := :none
     grid := false
     x := real.(z)
@@ -37,7 +37,7 @@ end
   dxp = round(xmaxp)*0.5
 
   layout := (1,2)
-  ratio := 1
+  aspect_ratio := 1
   legend := :none
   xlims --> [(-xmaxc,xmaxc) (-xmaxp,xmaxp)]
   ylims --> [(-xmaxc,xmaxc) (-xmaxp,xmaxp)]
@@ -55,13 +55,13 @@ end
 
     @series begin
       subplot := 1
-      color --> mygreen2
+      seriescolor --> mygreen2
 
       real.(ζg), imag.(ζg)
     end
     @series begin
       subplot := 2
-      color -->  mygreen2
+      seriescolor -->  mygreen2
 
       real.(zg), imag.(zg)
     end
@@ -79,13 +79,13 @@ end
     zg = m(ζg)
     @series begin
       subplot := 1
-      color -->  myblue
+      seriescolor -->  myblue
 
       real.(ζg), imag.(ζg)
     end
     @series begin
       subplot := 2
-      color -->  myblue
+      seriescolor -->  myblue
 
       real.(zg), imag.(zg)
     end
