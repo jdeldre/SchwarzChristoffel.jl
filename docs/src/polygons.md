@@ -10,6 +10,7 @@ end
 
 ```@docs
 Polygons.Polygon
+Polygons.LinkedLines
 Polygons.vertex
 Polygons.interiorangle
 Base.length(::Polygons.Polygon)

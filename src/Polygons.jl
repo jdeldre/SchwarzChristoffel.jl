@@ -6,7 +6,7 @@ module Polygons
 using Statistics
 import Base: length, show, isinf
 
-export Polygon,vertex,interiorangle,isinpoly,naca4
+export Polygon,vertex,interiorangle,isinpoly,naca4,LinkedLines
 
 """
     Polygon(x::Vector{Float64}, y::Vector{Float64})
@@ -36,7 +36,7 @@ Polygon(x::T,y::T,angle) where T = Polygon(x+im*y,angle)
 Polygon(x::T,y::T) where T = Polygon(x+im*y,interiorangle(x+im*y))
 
 """
-    Polygon(w::Vector{Complex128})
+    Polygon(w::Vector{ComplexF64})
 
 Sets up a polygon with the coordinates of the vertices specified
 with complex vector `w`. As usual, these must be supplied in
@@ -54,7 +54,7 @@ Polygon with 4 vertices at
 Polygon(w::Vector{ComplexF64}) = Polygon(w,interiorangle(w))
 
 """
-    vertex(p::Polygon) -> Vector{Complex128}
+    vertex(p::Polygon) -> Vector{ComplexF64}
 
 Returns the vector of vertices of the polygon `p`, in complex form.
 
@@ -229,6 +229,14 @@ isinpoly(z,p::Polygon,tol) = isinpoly(z,p.vert,p.angle,tol)
 winding(z,x...) = float.(isinpoly(z,x...))
 
 #=  some specific shape families =#
+"""
+    LinkedLines(x,y) -> Polygon
+
+Create an infinitesimally-thin polygonal shape consisting of a set of
+linked line segments, whose endpoints are specified by `x` and `y`.
+"""
+LinkedLines(x,y) = Polygon(vcat(reverse(x),x[2:end-1]),vcat(reverse(y),y[2:end-1]))
+
 
 """
     naca4(cam,pos,t[;np=20][,Zc=0.0+0.0im][,len=1.0]) -> Vector{Complex128}
