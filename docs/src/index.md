@@ -12,8 +12,7 @@ A polygon could be a simple shape, of course, like a square, with only a few ver
 using SchwarzChristoffel
 using Plots
 pyplot()
-clibrary(:colorbrewer)
-default(grid = false)
+default(grid = false, color = :colorbrewer)
 p = Polygon([-0.5,0.5,0.5,-0.5],[-0.5,-0.5,0.5,0.5])
 m = ExteriorMap(p)
 plot(m)
