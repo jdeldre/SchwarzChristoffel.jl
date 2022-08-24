@@ -2,7 +2,7 @@
 
 | Documentation | Build Status |
 |:---:|:---:|
-| [![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://jdeldre.github.io/SchwarzChristoffel.jl/latest/) | [![Build Status](https://img.shields.io/travis/jdeldre/SchwarzChristoffel.jl/master.svg?label=linux)](https://travis-ci.org/jdeldre/SchwarzChristoffel.jl) [![Build status](https://img.shields.io/appveyor/ci/jdeldre/SchwarzChristoffel-jl/master.svg?label=windows)](https://ci.appveyor.com/project/jdeldre/schwarzchristoffel-jl/branch/master) [![codecov](https://codecov.io/gh/jdeldre/SchwarzChristoffel.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jdeldre/SchwarzChristoffel.jl) |
+| [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://jdeldre.github.io/SchwarzChristoffel.jl/stable) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://jdeldre.github.io/SchwarzChristoffel.jl/dev) | [![Build Status](https://github.com/jdeldre/SchwarzChristoffel.jl/workflows/CI/badge.svg)](https://github.com/jdeldre/SchwarzChristoffel.jl/actions) [![Coverage](https://codecov.io/gh/jdeldre/SchwarzChristoffel.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jdeldre/SchwarzChristoffel.jl) |
 
 ## About the package
 
