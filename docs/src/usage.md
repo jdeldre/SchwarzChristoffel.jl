@@ -61,7 +61,7 @@ We can also evaluate the first and second derivative of the map at any place(s).
 Let's evaluate at a range of points outside the circle.
 ```@repl mapconstruct
 dm = DerivativeMap(m)
-ζ = collect(1.1:0.1:2.0) + 0.1im
+ζ = collect(1.1:0.1:2.0) .+ 0.1im
 dz,ddz = dm(ζ);
 dz
 ```
@@ -69,14 +69,14 @@ dz
 using SchwarzChristoffel
 using Plots
 pyplot()
-default(grid = false, color=:colorbrewer)
+default(grid = false)
 ```
 
 Now let's try a more interesting shape. Here's a star-shaped body
 ```@repl mapconstruct2
 n = 8; dθ = 2π/(2n)
 θ = collect(0:dθ:2π-dθ)
-w = (1+0.3cos.(n*θ)).*exp.(im*θ)
+w = (1 .+ 0.3cos.(n*θ)).*exp.(im*θ)
 p = Polygon(w)
 plot(p)
 savefig("polygon8.svg"); nothing # hide
