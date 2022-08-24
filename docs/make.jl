@@ -1,7 +1,9 @@
 using Documenter, SchwarzChristoffel
 
+ENV["GKSwstype"] = "nul" # removes GKS warnings during plotting
+
 makedocs(
-    format =:html,
+    #format =:html,
     sitename = "SchwarzChristoffel.jl",
     pages = [
         "Home" => "index.md",
@@ -11,15 +13,24 @@ makedocs(
                    "exterior.md"
                    ]
     ],
-    assets = ["assets/custom.css"],
+    #assets = ["assets/custom.css"],
     strict = true,
-    doctest = true
+    doctest = true,
+    format = Documenter.HTML(
+        prettyurls = get(ENV, "CI", nothing) == "true",
+        mathengine = MathJax(Dict(
+            :TeX => Dict(
+                :equationNumbers => Dict(:autoNumber => "AMS"),
+                :Macros => Dict()
+            )
+        ))
+    )
 )
 
 deploydocs(
-    deps = nothing,
-    repo = "github.com/jdeldre/SchwarzChristoffel.jl.git",
-    target = "build",
-    make = nothing,
-    julia = "0.6"
+     repo = "github.com/jdeldre/SchwarzChristoffel.jl.git",
+     target = "build",
+     deps = nothing,
+     make = nothing
+     #versions = "v^"
 )

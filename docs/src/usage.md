@@ -69,8 +69,7 @@ dz
 using SchwarzChristoffel
 using Plots
 pyplot()
-clibrary(:colorbrewer)
-default(grid = false)
+default(grid = false, color=:colorbrewer)
 ```
 
 Now let's try a more interesting shape. Here's a star-shaped body
