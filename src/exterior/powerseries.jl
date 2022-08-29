@@ -54,7 +54,7 @@ function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
   return dz, ddz, dddz
 end
 
-function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
+function (dps::PowerSeriesDerivatives)(ζs::AbstractArray{T}) where T<:Number
   dz = zero(ζs)
   ddz = zero(ζs)
   dddz = zero(ζs)
