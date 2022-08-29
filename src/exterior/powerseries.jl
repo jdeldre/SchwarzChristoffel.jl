@@ -31,7 +31,7 @@ function (ps::PowerSeries)(ζ::T) where T<:Number
   return z
 end
 
-(ps::PowerSeries)(ζ::Vector{T}) where T<:Number = ps.(ζ)
+(ps::PowerSeries)(ζ::AbstractArray{T}) where T<:Number = ps.(ζ)
 
 struct PowerSeriesDerivatives
   ps :: PowerSeries
