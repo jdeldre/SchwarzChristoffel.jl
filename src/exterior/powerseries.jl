@@ -42,21 +42,26 @@ function (dps::PowerSeriesDerivatives)(ζ::T) where T<:Number
   dz = C[1]
   ζⁿ = 1/ζ^2
   ddz = ComplexF64(0)
+  dddz = ComplexF64(0)
+
   for n in 1:length(C)-2
     dz -= n*C[n+2]*ζⁿ
     ζⁿ /= ζ
-    ddz += n*(n+1)*C[n+2]*ζⁿ
+    dtmp = n*(n+1)*C[n+2]*ζⁿ
+    ddz += dtmp
+    dddz -= (n+2)*dtmp/ζ
   end
-  return dz, ddz
+  return dz, ddz, dddz
 end
 
 function (dps::PowerSeriesDerivatives)(ζs::Vector{T}) where T<:Number
   dz = zero(ζs)
   ddz = zero(ζs)
+  dddz = zero(ζs)
   for (i,ζ) in enumerate(ζs)
-    dz[i], ddz[i] = dps(ζ)
+    dz[i], ddz[i], dddz[i] = dps(ζ)
   end
-  return dz, ddz
+  return dz, ddz, dddz
 end
 
 function evalinv_exterior(z::Vector{ComplexF64},ps::PowerSeries,
