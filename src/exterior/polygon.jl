@@ -135,11 +135,11 @@ function evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
 
 end
 
-function evalderiv_exterior(ζ::Vector{ComplexF64},β::Vector{Float64},
+function evalderiv_exterior(ζ::Vector{ComplexF64},β_orig::Vector{Float64},
                   prev::Vector{ComplexF64},c::ComplexF64)
 
 #=
-Evaluates the first and second derivative of the exterior Schwarz-Christoffel
+Evaluates the first, second, and third derivatives of the exterior Schwarz-Christoffel
 mapping at `ζ`, which is
 presumed to be inside the unit circle. The vector `β` are the exterior turning
 angles (also in clockwise order), `prev` are the prevertices on the unit circle, and
@@ -147,12 +147,19 @@ angles (also in clockwise order), `prev` are the prevertices on the unit circle,
 =#
     n = length(prev)
     neval = length(ζ)
-    β = [β;-2]
-    terms = [hcat([1 .- ζ/prev[i] for i = 1:n]...) ζ]
-    dz = c*exp.(log.(terms)*β)
-    terms2 = [[-β[i]/prev[i] for i = 1:n];β[n+1]]
-    ddz = dz.*((1.0./terms)*terms2)
-    return dz, ddz
+    β = [β_orig;-2]
+    inv_prev = 1.0./prev
+    lζ = hcat(1.0 .- ζ*transpose(inv_prev),ζ)
+    dz = c*exp.(log.(lζ)*β)
+    βdlζ = vcat(-β_orig.*inv_prev,last(β))
+    βdlζ2 = vcat(β_orig.*inv_prev.^2,last(β))
+    dh = (1.0./lζ)*βdlζ
+    ddh = -(1.0./lζ.^2)*βdlζ2
+
+    ddz = dz.*dh
+    dddz = dz.*ddh .+ ddz.*dh
+
+    return dz, ddz, dddz
 
 end
 

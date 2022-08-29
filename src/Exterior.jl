@@ -23,7 +23,7 @@ using .Reindex
 
 export PowerSeries,PowerSeriesDerivatives,PowerMap,ExteriorMap,
         KarmanTrefftzMap,JoukowskiMap,
-        summary,parameters,coefficients,
+        summary,parameters,coefficients,derivatives,
         moments,area,centroid,Jmoment,addedmass
 
 include("exterior/powerseries.jl")
@@ -151,7 +151,12 @@ end
 (minv::InverseMap{PowerMap})(z::ComplexF64) = getindex(minv([z]),1)
 
 
-(dm::DerivativeMap{PowerMap})(ζ) = dm.m.dps(ζ)
+function (dm::DerivativeMap{PowerMap})(ζ)
+  dz, ddz, dddz = dm.m.dps(ζ)
+  return dz, ddz
+end
+
+derivatives(ζ,m::PowerMap) = m.dps(ζ)
 
 
 function shape_moments(ps::PowerSeries)
@@ -722,16 +727,18 @@ function DerivativeMap() end
 
 function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=false)
   if inside
-    return evalderiv_exterior(ζ,1 .- reverse(dm.m.angle, dims = 1),dm.m.ζ,dm.m.constant)
+    dz, ddz, dddz = evalderiv_exterior(ζ,1 .- reverse(dm.m.angle, dims = 1),dm.m.ζ,dm.m.constant)
+    return dz, ddz
   else
     b = -dm.m.constant/abs(dm.m.constant)
+    
     ζ[ζ.==0] .= eps();
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 
     σ = b./ζ
     dσ = -σ./ζ
     ddσ = -2.0*dσ./ζ
-    dz, ddz = evalderiv_exterior(σ,1 .- reverse(dm.m.angle, dims = 1),dm.m.ζ,dm.m.constant)
+    dz, ddz, dddz = evalderiv_exterior(σ,1 .- reverse(dm.m.angle, dims = 1),dm.m.ζ,dm.m.constant)
     ddz = ddz.*dσ.^2 + dz.*ddσ
     dz .*= dσ
     return dz, ddz
@@ -743,6 +750,35 @@ function (dm::DerivativeMap{ExteriorMap})(ζ::ComplexF64;inside::Bool=false)
   return dz[1],ddz[1]
 end
 
+"""
+    derivatives(ζ,m::ExteriorMap[,inside=false])
+
+Return the first, second, and third derivatives of the map in `m`.
+"""
+function derivatives(ζ::Vector{ComplexF64},m::ExteriorMap;inside::Bool=false)
+  if inside
+    return evalderiv_exterior(ζ,1 .- reverse(m.angle, dims = 1),m.ζ,m.constant)
+  else
+    b = -m.constant/abs(m.constant)
+    ζ[ζ.==0] .= eps();
+    ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
+
+    σ = b./ζ
+    dσ = -σ./ζ
+    ddσ = -2.0*dσ./ζ
+    dddσ = -3.0*ddσ./ζ
+    dz, ddz, dddz = evalderiv_exterior(σ,1 .- reverse(m.angle, dims = 1),m.ζ,m.constant)
+    dddz = dddz.*dσ.^3 .+ 3*ddz.*ddσ.*dσ .+ dz.*dddσ
+    ddz = ddz.*dσ.^2 .+ dz.*ddσ
+    dz .*= dσ
+    return dz, ddz, dddz
+  end
+end
+
+function derivatives(ζ::ComplexF64,m::ExteriorMap;inside::Bool=false)
+  dz, ddz, dddz = derivatives([ζ],m;inside=inside)
+  return dz[1],ddz[1], dddz[1]
+end
 
 #= get various data about the map =#
 """
