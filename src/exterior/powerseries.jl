@@ -64,6 +64,31 @@ function (dps::PowerSeriesDerivatives)(ζs::AbstractArray{T}) where T<:Number
   return dz, ddz, dddz
 end
 
+function power_series_first_derivative_only!(dzs::AbstractArray{T},ζs::AbstractArray{T},dps::PowerSeriesDerivatives) where {T<:Number}
+  for i in eachindex(ζs)
+    dzs[i] = power_series_first_derivative_only(ζs[i],dps)
+  end
+end
+
+function power_series_first_derivative_only(ζs::AbstractArray{T},dps::PowerSeriesDerivatives) where {T<:Number}
+  return map(ζ -> power_series_first_derivative_only(ζ,dps),ζs)
+end
+
+power_series_first_derivative_only(ζ::T,dps::PowerSeriesDerivatives) where T<:Number =
+                  _power_series_first_derivative_only(ζ,dps.ps.ccoeff)
+
+function _power_series_first_derivative_only(ζ::T,C::Vector{ComplexF64}) where T<:Number
+  dz = C[1]
+  ζⁿ = 1/ζ^2
+
+  for n in 1:length(C)-2
+    dz -= n*C[n+2]*ζⁿ
+    ζⁿ /= ζ
+  end
+  return dz
+end
+
+
 function evalinv_exterior(z::Vector{ComplexF64},ps::PowerSeries,
                                 dps::PowerSeriesDerivatives)
 #=
@@ -88,7 +113,9 @@ of integration and Newton iteration.
      # choose a point on the unit circle
      ζ0 = exp.(im*zeros(lenz))
      ζ0[isapprox.(angle.(z),π;atol=eps())] .= exp(im*π)
-     dz0,ddz0 = dps(ζ0)
+     #dz0,ddz0 = dps(ζ0)
+     dz0 = power_series_first_derivative_only(ζ0,dps)
+
      # check for starting points on edges of the body, and rotate them
      # a bit if so
      onedge = isapprox.(abs.(dps(ζ0)[1]),0.0;atol=eps())
@@ -103,17 +130,18 @@ of integration and Newton iteration.
      z0 = z0[.~done]
      ζ0 = ζ0[.~done]
    end
-   odetol = max(tol,1e-3)
+   odetol = max(tol,1e-4)
    scale = z[.~done] - z0
 
-   ζ0 = [real(ζ0);imag(ζ0)]
+   dz_storage = zero(ζ0)
 
-   f(ζ,p,t) = invfunc(ζ,scale,dps)
+   f(ζ,p,t) = invfunc(ζ,scale,dps,p)
    tspan = (0.0,1.0)
-   prob = ODEProblem(f,ζ0,tspan)
-   sol = solve(prob,Tsit5(),reltol=1e-8,abstol=1e-8)
-   lenu = length(ζ0)
-   ζ[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+   prob = ODEProblem(f,ζ0,tspan,dz_storage)
+   my_eps = 1e-4
+   sol = solve(prob,Tsit5(),reltol=odetol,abstol=odetol)
+
+   ζ[.~done] = sol.u[end] #sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
    out = abs.(ζ) .> 1
    ζ[out] = sign.(ζ[out])
 
@@ -122,9 +150,11 @@ of integration and Newton iteration.
    k = 0
    while ~all(done) && k < maxiter
      F = z[.~done] - ps(ζn[.~done])
-     M = length(F)
-     dF, ddz = dps(ζn[.~done])
-     ζn[.~done] = ζn[.~done] + F./dF
+
+     ζ_notdone = ζn[.~done]
+     dF = zero(ζ_notdone)
+     power_series_first_derivative_only!(dF,ζ_notdone,dps)
+     ζn[.~done] .= ζ_notdone .+ F./dF
 
      done[.~done] = abs.(F).< tol
      k += 1
@@ -137,12 +167,9 @@ of integration and Newton iteration.
 
 end
 
-function invfunc(u,scale,dps::PowerSeriesDerivatives)
-    lenu = length(u)
-    lenzp = Int(lenu/2)
-    ζ = u[1:lenzp]+im*u[lenzp+1:lenu]
+function invfunc(ζ,scale,dps::PowerSeriesDerivatives,dz)
 
-    dz, ddz = dps(ζ)
-    f = scale./dz
-    zdot = [real(f);imag(f)]
+    power_series_first_derivative_only!(dz,ζ,dps)
+    #dz .= scale./dz
+    return scale./dz
 end
