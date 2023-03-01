@@ -228,15 +228,10 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    odetol = max(tol,1e-3)
    scale = z[.~done] - z0
 
-   #ζ0 = [real(ζ0);imag(ζ0)]
-
    f(ζ,p,t) = invfunc(ζ,scale,β,prev,c)
    tspan = (0.0,1.0)
    prob = ODEProblem(f,ζ0,tspan)
-   #my_eps = 1e-8
    sol = solve(prob,Tsit5(),reltol=odetol,abstol=odetol)
-   #lenu = length(ζ0)
-   #ζ[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
    ζ[.~done] = sol.u[end]
 
    out = abs.(ζ) .> 1
@@ -269,8 +264,8 @@ function invfunc(ζ,scale,β::Vector{Float64},prev::Vector{ComplexF64},c::Comple
 end
 
 function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
-                  β::Vector{Float64},prev::Vector{ComplexF64},
-                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+  β::Vector{Float64},prev::Vector{ComplexF64},
+  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
   n = length(w)
   #tol = 1000.0*10.0^(-size(qdat[1])[1])
@@ -282,10 +277,13 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
   argz = angle.(prev);
   argz[argz.<=0] .+= 2π
 
+  # angle(w[j+1] - w[j])
   argw = cumsum([angle(w[2]-w[1]); -π*β[2:n]])
 
-  infty = isinf.(w)
+  # allows for easy access to next point, modulo length of list
   fwd = circshift(1:n,-1)
+
+  infty = isinf.(w)
   anchor = zero(w)
   anchor[.~infty] = w[.~infty]
   anchor[infty] = w[fwd[infty]]
@@ -314,10 +312,11 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
     zbase = evaluate_exterior(ζbase,w,β,prev,c,qdat)
     proj = real.( (zbase-anchor) .* conj.(direcn) )
     zbase = anchor + proj.*direcn
+
     if isempty(idx)
       dist,idxtemp = findmin(abs.( repeat(transpose(z[.~done]), n) - repeat(zbase, 1, M)), dims = 1)
       for k = 1:M
-          push!(idx,idxtemp[k][1])
+        push!(idx,idxtemp[k][1])
       end
     else
       idx[.~done] = idx[.~done].%n .+ 1
@@ -326,11 +325,14 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
     z0[.~done] = zbase[idx[.~done]]
 
     for j = 1:n
+      # active -> eval pts whose closest vertex is j and whose
+      #           initial pts have not been decided yet
       active = (idx.==j) .& (.~done)
       if any(active)
 
         done[active] = ones(Bool,sum(active))
-        for k in [1:j-1;j+1:n]'
+        for k in 1:n #[1:j-1;j+1:n]'
+          k == j && continue
           A[:,1] = [real(direcn[k]);imag(direcn[k])]
           for p in findall(active)
             dif = z0[p]-z[p]
@@ -355,7 +357,7 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
                     elseif s[2] > 0 && s[2] < 1
                       done[p] = false
                     end
-                  end
+                  end # if
                 end # cond(A)
               end # for p
             end # for k
@@ -364,19 +366,19 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
               break
             end
           end # if any active
-          if iter > 2*n
-            error("Can''t seem to choose starting points.  Supply them manually.")
-          else
-            iter += 1
-          end
-          factor = rand(1)[1]
+
         end # for j
+        if iter > 2*n
+          error("Cannot seem to choose starting points.  Supply them manually.")
+        else
+          iter += 1
+        end
+        factor = rand()
+      end  # while M
 
-  end  # while M
+      return ζ0, z0
 
-  return ζ0, z0
-
-end
+    end
 
 ####
 
