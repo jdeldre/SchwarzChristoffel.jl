@@ -130,7 +130,7 @@ of integration and Newton iteration.
      z0 = z0[.~done]
      ζ0 = ζ0[.~done]
    end
-   odetol = max(tol,1e-3)
+   odetol = max(tol,1e-4)
    scale = z[.~done] - z0
 
    dz_storage = zero(ζ0)
@@ -139,8 +139,8 @@ of integration and Newton iteration.
    tspan = (0.0,1.0)
    prob = ODEProblem(f,ζ0,tspan,dz_storage)
    my_eps = 1e-4
-   sol = solve(prob,Tsit5(),reltol=my_eps,abstol=my_eps)
-   
+   sol = solve(prob,Tsit5(),reltol=odetol,abstol=odetol)
+
    ζ[.~done] = sol.u[end] #sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
    out = abs.(ζ) .> 1
    ζ[out] = sign.(ζ[out])

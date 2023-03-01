@@ -268,7 +268,6 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
   c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
   n = length(w)
-  #tol = 1000.0*10.0^(-size(qdat[1])[1])
   tol = 1000.0*10.0^(-size(qdat[1])[1])
 
   shape = copy(z)
@@ -331,7 +330,7 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
       if any(active)
 
         done[active] = ones(Bool,sum(active))
-        for k in 1:n #[1:j-1;j+1:n]'
+        for k in 1:n
           k == j && continue
           A[:,1] = [real(direcn[k]);imag(direcn[k])]
           for p in findall(active)
