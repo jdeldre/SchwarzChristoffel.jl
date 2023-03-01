@@ -163,6 +163,25 @@ angles (also in clockwise order), `prev` are the prevertices on the unit circle,
 
 end
 
+function evalderiv_exterior_first(ζ::Vector{ComplexF64},β_orig::Vector{Float64},
+                  prev::Vector{ComplexF64},c::ComplexF64)
+
+#=
+Evaluates the first derivatives of the exterior Schwarz-Christoffel
+mapping at `ζ`, which is
+presumed to be inside the unit circle. The vector `β` are the exterior turning
+angles (also in clockwise order), `prev` are the prevertices on the unit circle, and
+`c` is the constant factor of the transformation.
+=#
+    β = [β_orig;-2]
+    inv_prev = 1.0./prev
+    lζ = hcat(1.0 .- ζ*transpose(inv_prev),ζ)
+    dz = c*exp.(log.(lζ)*β)
+
+    return dz
+
+end
+
 function evalinv_exterior(z::Vector{ComplexF64},w::Vector{ComplexF64},
                   β::Vector{Float64},prev::Vector{ComplexF64},
                   c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
@@ -209,14 +228,17 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    odetol = max(tol,1e-3)
    scale = z[.~done] - z0
 
-   ζ0 = [real(ζ0);imag(ζ0)]
+   #ζ0 = [real(ζ0);imag(ζ0)]
 
    f(ζ,p,t) = invfunc(ζ,scale,β,prev,c)
    tspan = (0.0,1.0)
    prob = ODEProblem(f,ζ0,tspan)
-   sol = solve(prob,Tsit5(),reltol=1e-8,abstol=1e-8)
-   lenu = length(ζ0)
-   ζ[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+   #my_eps = 1e-8
+   sol = solve(prob,Tsit5(),reltol=odetol,abstol=odetol)
+   #lenu = length(ζ0)
+   #ζ[.~done] = sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+   ζ[.~done] = sol.u[end]
+
    out = abs.(ζ) .> 1
    ζ[out] = sign.(ζ[out])
 
@@ -226,7 +248,7 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    while ~all(done) && k < maxiter
      F = z[.~done] - evaluate_exterior(ζn[.~done],w,β,prev,c,qdat)
      M = length(F)
-     dF, ddz = evalderiv_exterior(ζn[.~done],β,prev,c)
+     dF = evalderiv_exterior_first(ζn[.~done],β,prev,c)
      ζn[.~done] = ζn[.~done] + F./dF
 
      done[.~done] = abs.(F).< tol
@@ -241,14 +263,9 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
 end
 
 
-function invfunc(u,scale,β::Vector{Float64},prev::Vector{ComplexF64},c::ComplexF64)
-    lenu = length(u)
-    lenzp = Int(lenu/2)
-    ζ = u[1:lenzp]+im*u[lenzp+1:lenu]
-
-    dz, ddz = evalderiv_exterior(ζ,β,prev,c)
-    f = scale./dz
-    zdot = [real(f);imag(f)]
+function invfunc(ζ,scale,β::Vector{Float64},prev::Vector{ComplexF64},c::ComplexF64)
+    dz = evalderiv_exterior_first(ζ,β,prev,c)
+    return scale./dz
 end
 
 function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
@@ -256,7 +273,9 @@ function initial_guess(z::Vector{ComplexF64},w::Vector{ComplexF64},
                   c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
 
   n = length(w)
+  #tol = 1000.0*10.0^(-size(qdat[1])[1])
   tol = 1000.0*10.0^(-size(qdat[1])[1])
+
   shape = copy(z)
   ζ0 = copy(z)
   z0 = copy(z)
