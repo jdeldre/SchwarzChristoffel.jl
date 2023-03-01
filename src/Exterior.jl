@@ -675,7 +675,7 @@ julia> m⁻¹(m(ζ))
 ```
 """ InverseMap
 
-function (minv::InverseMap{ExteriorMap})(z::Vector{ComplexF64};inside::Bool=false)
+function (minv::InverseMap{ExteriorMap})(z::AbstractArray{ComplexF64};inside::Bool=false)
   if inside
     return evalinv_exterior(z,reverse(minv.m.z, dims = 1),1 .- reverse(minv.m.angle, dims = 1),
             minv.m.ζ,minv.m.constant,minv.m.qdata)
@@ -731,7 +731,7 @@ function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=fa
     return dz, ddz
   else
     b = -dm.m.constant/abs(dm.m.constant)
-    
+
     ζ[ζ.==0] .= eps();
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 

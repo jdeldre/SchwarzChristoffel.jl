@@ -110,15 +110,23 @@ of integration and Newton iteration.
    #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
    # with the initial condition ζ(0) = ζ₀.
    if isempty(ζ0)
-     # choose a point on the unit circle
-     ζ0 = exp.(im*zeros(lenz))
-     ζ0[isapprox.(angle.(z),π;atol=eps())] .= exp(im*π)
-     #dz0,ddz0 = dps(ζ0)
+
+     # Find the point on shape that is closest and use this as initial condition
+     idx = []
+     M = length(z)
+     ζbase = exp.(im.*[0.0,π])  # select 1 or -1 as initial condition
+     zbase = ps(ζbase)
+     dist,idxtemp = findmin(abs.( repeat(transpose(z), length(zbase)) - repeat(zbase, 1, M)), dims = 1)
+     for k = 1:M
+       push!(idx,idxtemp[k][1])
+     end
+     ζ0 = ζbase[idx]
+
      dz0 = power_series_first_derivative_only(ζ0,dps)
 
      # check for starting points on edges of the body, and rotate them
      # a bit if so
-     onedge = isapprox.(abs.(dps(ζ0)[1]),0.0;atol=eps())
+     onedge = isapprox.(abs.(dz0),0.0;atol=3*eps())
      ζ0[onedge] .*= exp(im*π/20)
      z0 = ps(ζ0)
    else
@@ -138,12 +146,12 @@ of integration and Newton iteration.
    f(ζ,p,t) = invfunc(ζ,scale,dps,p)
    tspan = (0.0,1.0)
    prob = ODEProblem(f,ζ0,tspan,dz_storage)
-   my_eps = 1e-4
    sol = solve(prob,Tsit5(),reltol=odetol,abstol=odetol)
 
    ζ[.~done] = sol.u[end] #sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
+
    out = abs.(ζ) .> 1
-   ζ[out] = sign.(ζ[out])
+   #ζ[out] = sign.(ζ[out])
 
    # Now use Newton iterations to improve the solution
    ζn = ζ
@@ -161,9 +169,14 @@ of integration and Newton iteration.
    end
    F = z[.~done] - ps(ζn[.~done])
    if any(abs.(F).> tol)
-     error("Check solution")
+     error("Check solution. Maximum residual = "*string(maximum(abs.(F))))
    end
    ζ = ζn
+
+   #out = abs.(ζ) .> 1
+   #ζ[out] = sign.(ζ[out])
+
+   return ζ
 
 end
 
