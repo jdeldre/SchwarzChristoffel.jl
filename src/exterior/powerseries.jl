@@ -10,6 +10,7 @@ function PowerSeries(ccoeff::Vector{T},dcoeff::Vector{T}) where T
   PowerSeries{ncoeff,T}(ccoeff,dcoeff)
 end
 
+
 function Base.show(io::IO,ps::PowerSeries{N,T}) where {N,T}
   println(io, "multipole coefficients:")
   println(io, "  c₁ = $(ps.ccoeff[1]), ")
@@ -88,12 +89,22 @@ function _power_series_first_derivative_only(ζ::T,C::Vector{ComplexF64}) where 
   return dz
 end
 
+struct PowerSeriesCache
+  dz_cache :: Vector
+  scale :: Vector
+  dps :: PowerSeriesDerivatives
+end
+
+
 
 function evalinv_exterior(z::Vector{ComplexF64},ps::PowerSeries,
                                 dps::PowerSeriesDerivatives)
 #=
 Evaluates the inverse of the exterior power series mapping, using a combination
 of integration and Newton iteration.
+
+This routine works well except it sometimes places points inside the
+circle. This usually only happens for a flat plate.
 =#
 
    ζ = zeros(ComplexF64,size(z))
@@ -101,6 +112,13 @@ of integration and Newton iteration.
    ζ0 = []
    maxiter = 10
    tol = 1.0e-8
+
+   M = length(z)
+
+   # sample the shape with n points, which will serve as vertices
+   n = 50
+   Θ = range(0,2π,length=n+1)
+   prev = exp.(im.*Θ[1:n])
 
    # Find z values close to vertices and set ζ to the corresponding
    # prevertices
@@ -110,16 +128,24 @@ of integration and Newton iteration.
    #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
    # with the initial condition ζ(0) = ζ₀.
    if isempty(ζ0)
-     # choose a point on the unit circle
-     ζ0 = exp.(im*zeros(lenz))
-     ζ0[isapprox.(angle.(z),π;atol=eps())] .= exp(im*π)
-     #dz0,ddz0 = dps(ζ0)
-     dz0 = power_series_first_derivative_only(ζ0,dps)
+
+     ζbase = prev
 
      # check for starting points on edges of the body, and rotate them
      # a bit if so
-     onedge = isapprox.(abs.(dps(ζ0)[1]),0.0;atol=eps())
-     ζ0[onedge] .*= exp(im*π/20)
+     dzbase = power_series_first_derivative_only(ζbase,dps)
+     onedge = isapprox.(abs.(dzbase),0.0;atol=3*eps())
+     ζbase[onedge] .*= exp(-im*1.0*(Θ[2]-Θ[1]))
+     zbase = ps(ζbase)
+
+     # Find the point on shape that is closest and use this as initial condition
+     idx = []
+     dist,idxtemp = findmin(abs.( repeat(transpose(z), n) - repeat(zbase, 1, M)), dims = 1)
+     for k = 1:M
+       push!(idx,idxtemp[k][1])
+     end
+     ζ0 = ζbase[idx]
+
      z0 = ps(ζ0)
    else
      z0 = ps(ζ0)
@@ -135,15 +161,24 @@ of integration and Newton iteration.
 
    dz_storage = zero(ζ0)
 
-   f(ζ,p,t) = invfunc(ζ,scale,dps,p)
+   p = PowerSeriesCache(dz_storage,scale,dps)
+
+   # Checks whether an initial point will tend to make
+   # the sequence of zeta values go into the circle.
+   # If so, swap the initial point with its conjugate
+   dζ = invfunc(ζ0,p,0.0)
+   wrong_side = real(conj(ζ0).*dζ) .< 0
+   ζ0[wrong_side] = conj(ζ0[wrong_side])
+   z0[wrong_side] = ps(ζ0[wrong_side])
+   scale = z[.~done] - z0
+
+   p = PowerSeriesCache(dz_storage,scale,dps)
+
    tspan = (0.0,1.0)
-   prob = ODEProblem(f,ζ0,tspan,dz_storage)
-   my_eps = 1e-4
-   sol = solve(prob,Tsit5(),reltol=odetol,abstol=odetol)
+   prob = ODEProblem(invfunc,ζ0,tspan,p)
+   sol = solve(prob,BS3(),reltol=odetol,abstol=odetol)
 
    ζ[.~done] = sol.u[end] #sol.u[end][1:lenz]+im*sol.u[end][lenz+1:lenu];
-   out = abs.(ζ) .> 1
-   ζ[out] = sign.(ζ[out])
 
    # Now use Newton iterations to improve the solution
    ζn = ζ
@@ -161,15 +196,16 @@ of integration and Newton iteration.
    end
    F = z[.~done] - ps(ζn[.~done])
    if any(abs.(F).> tol)
-     error("Check solution")
+     error("Check solution. Maximum residual = "*string(maximum(abs.(F))))
    end
    ζ = ζn
 
+   return ζ
+
 end
 
-function invfunc(ζ,scale,dps::PowerSeriesDerivatives,dz)
-
-    power_series_first_derivative_only!(dz,ζ,dps)
-    #dz .= scale./dz
-    return scale./dz
+function invfunc(ζ,p::PowerSeriesCache,t)
+  @unpack dz_cache, scale, dps = p
+  power_series_first_derivative_only!(dz_cache,ζ,dps)
+  return scale./dz_cache
 end

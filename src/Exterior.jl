@@ -4,6 +4,8 @@ using NLsolve
 #using DifferentialEquations
 using OrdinaryDiffEq # using this module to reduce slow precompile of full DifferentialEquations package
 
+using UnPack
+
 #using Compat
 #using Compat: reverse, repeat, findmin
 #using Compat.LinearAlgebra
@@ -22,7 +24,7 @@ include("Reindex.jl")
 using .Reindex
 
 export PowerSeries,PowerSeriesDerivatives,PowerMap,ExteriorMap,
-        KarmanTrefftzMap,JoukowskiMap,
+        KarmanTrefftzMap,JoukowskiMap,isinside,
         summary,parameters,coefficients,derivatives,
         moments,area,centroid,Jmoment,addedmass
 
@@ -157,6 +159,10 @@ function (dm::DerivativeMap{PowerMap})(ζ)
 end
 
 derivatives(ζ,m::PowerMap) = m.dps(ζ)
+
+isinside(z,m::PowerMap) = isinside(z,m,eps())
+isinside(z,m::PowerMap,tol) = isinpoly(z,Polygon(real(m.z),imag(m.z)),tol)
+
 
 
 function shape_moments(ps::PowerSeries)
@@ -370,6 +376,10 @@ function Base.summary(m::KarmanTrefftzMap)
   print("trailing edge angle (deg): ")
   println("$(round((2-m.nu)*180,4))")
 end
+
+isinside(z,m::KarmanTrefftzMap) = isinside(z,m,eps())
+isinside(z,m::KarmanTrefftzMap,tol) = isinpoly(z,Polygon(real(m.z),imag(m.z)),tol)
+
 
 
 #=   Exterior map from circle to polygon  =#
@@ -675,7 +685,7 @@ julia> m⁻¹(m(ζ))
 ```
 """ InverseMap
 
-function (minv::InverseMap{ExteriorMap})(z::Vector{ComplexF64};inside::Bool=false)
+function (minv::InverseMap{ExteriorMap})(z::AbstractArray{ComplexF64};inside::Bool=false)
   if inside
     return evalinv_exterior(z,reverse(minv.m.z, dims = 1),1 .- reverse(minv.m.angle, dims = 1),
             minv.m.ζ,minv.m.constant,minv.m.qdata)
@@ -691,6 +701,10 @@ end
 
 (minv::InverseMap{ExteriorMap})(z::ComplexF64;inside::Bool=false) =
                 getindex(minv([z];inside=inside),1)
+
+
+isinside(z,m::ExteriorMap) = isinside(z,m,eps())
+isinside(z,m::ExteriorMap,tol) = isinpoly(z,m.z,m.angle,tol)
 
 
 """
@@ -731,7 +745,7 @@ function (dm::DerivativeMap{ExteriorMap})(ζ::Vector{ComplexF64};inside::Bool=fa
     return dz, ddz
   else
     b = -dm.m.constant/abs(dm.m.constant)
-    
+
     ζ[ζ.==0] .= eps();
     ζ[abs.(ζ).<1] = ζ[abs.(ζ).<1]./abs.(ζ[abs.(ζ).<1])
 

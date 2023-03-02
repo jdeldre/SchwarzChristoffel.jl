@@ -215,7 +215,7 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    #  dζ/dt = (z - z(ζ₀))/z'(ζ) from t = 0 to t = 1,
    # with the initial condition ζ(0) = ζ₀.
    if isempty(ζ0)
-     ζ0,z0 = initial_guess(z,w,β,prev,c,qdat)
+     ζ0,z0 = initial_guess(z[.~done],w,β,prev,c,qdat)
    else
      z0 = evaluate_exterior(ζ0,w,β,prev,c,qdat)
      if length(ζ0)==1 && lenz > 1
@@ -225,7 +225,9 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
      z0 = z0[.~done]
      ζ0 = ζ0[.~done]
    end
-   odetol = max(tol,1e-3)
+
+   odetol = max(tol,max(1e-5,minimum(β)*1e-3))
+
    scale = z[.~done] - z0
 
    f(ζ,p,t) = invfunc(ζ,scale,β,prev,c)
@@ -242,7 +244,6 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    k = 0
    while ~all(done) && k < maxiter
      F = z[.~done] - evaluate_exterior(ζn[.~done],w,β,prev,c,qdat)
-     M = length(F)
      dF = evalderiv_exterior_first(ζn[.~done],β,prev,c)
      ζn[.~done] = ζn[.~done] + F./dF
 
@@ -251,9 +252,14 @@ of integration and Newton iteration, using techniques from Trefethen (1979).
    end
    F = z[.~done] - evaluate_exterior(ζn[.~done],w,β,prev,c,qdat)
    if any(abs.(F).> tol)
-     error("Check solution")
+     error("Check solution. Maximum residual = "*string(maximum(abs.(F))))
    end
    ζ = ζn
+
+   #=out = abs.(ζ) .> 1
+   ζ[out] = sign.(ζ[out])
+   =#
+   return ζ
 
 end
 
