@@ -377,6 +377,10 @@ function Base.summary(m::KarmanTrefftzMap)
   println("$(round((2-m.nu)*180,4))")
 end
 
+isinside(z,m::KarmanTrefftzMap) = isinside(z,m,eps())
+isinside(z,m::KarmanTrefftzMap,tol) = isinpoly(z,Polygon(real(m.z),imag(m.z)),tol)
+
+
 
 #=   Exterior map from circle to polygon  =#
 
