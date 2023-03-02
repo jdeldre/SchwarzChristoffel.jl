@@ -4,6 +4,8 @@ using NLsolve
 #using DifferentialEquations
 using OrdinaryDiffEq # using this module to reduce slow precompile of full DifferentialEquations package
 
+using UnPack
+
 #using Compat
 #using Compat: reverse, repeat, findmin
 #using Compat.LinearAlgebra
@@ -22,7 +24,7 @@ include("Reindex.jl")
 using .Reindex
 
 export PowerSeries,PowerSeriesDerivatives,PowerMap,ExteriorMap,
-        KarmanTrefftzMap,JoukowskiMap,
+        KarmanTrefftzMap,JoukowskiMap,isinside,
         summary,parameters,coefficients,derivatives,
         moments,area,centroid,Jmoment,addedmass
 
@@ -157,6 +159,10 @@ function (dm::DerivativeMap{PowerMap})(ζ)
 end
 
 derivatives(ζ,m::PowerMap) = m.dps(ζ)
+
+isinside(z,m::PowerMap) = isinside(z,m,eps())
+isinside(z,m::PowerMap,tol) = isinpoly(z,Polygon(real(m.z),imag(m.z)),tol)
+
 
 
 function shape_moments(ps::PowerSeries)
@@ -691,6 +697,10 @@ end
 
 (minv::InverseMap{ExteriorMap})(z::ComplexF64;inside::Bool=false) =
                 getindex(minv([z];inside=inside),1)
+
+
+isinside(z,m::ExteriorMap) = isinside(z,m,eps())
+isinside(z,m::ExteriorMap,tol) = isinpoly(z,m.z,m.angle,tol)
 
 
 """
