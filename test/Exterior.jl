@@ -75,6 +75,19 @@
   zeta = m⁻¹(z)
   @test m(zeta) ≈ z
 
+  # flat plates
+  zv = rand(ComplexF64,2)
+  p = Polygon(zv)
+  m = ExteriorMap(p)
+  m⁻¹ = InverseMap(m)
+
+  z = rand(ComplexF64)
+  @test abs(m(m⁻¹(z)) - z) < 10*eps()
+
+  @test abs(m⁻¹(z,inside=true)) <= 1.0
+  @test abs(m⁻¹(z)) >= 1.0 
+
+
 end
 
 @testset "Power series map" begin
