@@ -6,9 +6,22 @@ Schwarz-Christoffel Transformation", STAN-CS-79-710, 1979.
 
 
 #= functions for the Schwarz-Christoffel exterior map from unit disk =#
-function param(w::Vector{ComplexF64},β::Vector{Float64},
+param(w::Vector{ComplexF64},β::Vector{Float64},
                  ζ0::Vector{ComplexF64},
-                 qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+                 qdat::Tuple{Array{Float64,2},Array{Float64,2}}) =
+        _param(w,β,ζ0,qdat,Val(length(w)))
+
+
+function _param(w::Vector{ComplexF64},β::Vector{Float64},
+                 ζ0::Vector{ComplexF64},
+                 qdat::Tuple{Array{Float64,2},Array{Float64,2}},::Val{2})
+
+   return ComplexF64[-1.0,1.0], 0.25*(w[1] - w[2])
+end
+
+function _param(w::Vector{ComplexF64},β::Vector{Float64},
+                 ζ0::Vector{ComplexF64},
+                 qdat::Tuple{Array{Float64,2},Array{Float64,2}},::Val{N}) where N
 #=
 Solve for the parameters of the exterior Schwarz-Christoffel mapping: the
 prevertices `ζ` and the constant factor `c`. The routine requires the
@@ -17,7 +30,7 @@ a list of guesses for the prevertices `ζ0` (which can be blank), and
 the Gauss-Jacobi quadrature data in `qdat`
 =#
 
-  n = length(w)
+  n = N
   if n == 2
     ζ = ComplexF64[-1,1]
   else
@@ -53,9 +66,29 @@ the Gauss-Jacobi quadrature data in `qdat`
 
 end
 
-function evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
+evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
                   β::Vector{Float64},prev::Vector{ComplexF64},
-                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}}) =
+      _evaluate_exterior(ζ,w,β,prev,c,qdat,Val(length(w)))
+
+
+function _evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
+                  β::Vector{Float64},prev::Vector{ComplexF64},
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}},::Val{2})
+
+   n = 2
+   w_cent = sum(w)/n
+   z = w_cent .- c*(ζ .+ 1.0./ζ)
+
+   return z
+
+
+end
+
+
+function _evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
+                  β::Vector{Float64},prev::Vector{ComplexF64},
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}},::Val{N}) where N
   #=
   Evaluates the exterior Schwarz-Christoffel mapping at `ζ`, which is
   presumed to be inside the unit circle. The vector `w` are the vertices (in
@@ -69,7 +102,7 @@ function evaluate_exterior(ζ::Vector{ComplexF64},w::Vector{ComplexF64},
     nothing
   end
 
-  n = length(w)
+  n = N
   neval = length(ζ)
   tol = 10.0^(-size(qdat[1],1))
 
@@ -182,16 +215,31 @@ angles (also in clockwise order), `prev` are the prevertices on the unit circle,
 
 end
 
-function evalinv_exterior(z::Vector{ComplexF64},w::Vector{ComplexF64},
+evalinv_exterior(z::Vector{ComplexF64},w::Vector{ComplexF64},
                   β::Vector{Float64},prev::Vector{ComplexF64},
-                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}})
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}}) =
+      _evalinv_exterior(z,w,β,prev,c,qdat,Val(length(w)))
+
+function _evalinv_exterior(z::Vector{ComplexF64},w::Vector{ComplexF64},
+                  β::Vector{Float64},prev::Vector{ComplexF64},
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}},::Val{2})
+
+  n = 2
+  w_cent = sum(w)/n
+  z̃ = 0.25*(z .- w_cent)/c
+  ζ = -2z̃ .+ sqrt.(2z̃.+1.0).*sqrt.(2z̃.-1.0)
+
+end
+
+function _evalinv_exterior(z::Vector{ComplexF64},w::Vector{ComplexF64},
+                  β::Vector{Float64},prev::Vector{ComplexF64},
+                  c::ComplexF64,qdat::Tuple{Array{Float64,2},Array{Float64,2}},::Val{N}) where N
 
 #=
 Evaluates the inverse of the exterior Schwarz-Christoffel mapping, using a combination
 of integration and Newton iteration, using techniques from Trefethen (1979).
 =#
-
-   n = length(w)
+   n = N
    ζ = zeros(ComplexF64,size(z))
    lenz = length(z)
    ζ0 = []
