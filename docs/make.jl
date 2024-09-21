@@ -14,7 +14,7 @@ makedocs(
                    ]
     ],
     #assets = ["assets/custom.css"],
-    strict = true,
+    clean = true,
     doctest = true,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
