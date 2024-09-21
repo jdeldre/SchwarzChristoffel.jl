@@ -6,11 +6,10 @@ srand(1)
 end
 ```
 
-Let's first initiate the module. We'll also initiate plotting with [Plots.jl](http://docs.juliaplots.org/latest/), using PyPlot as the backend for the actual output.
+Let's first initiate the module. We'll also initiate plotting with [Plots.jl](http://docs.juliaplots.org/latest/).
 ```@repl mapconstruct
 using SchwarzChristoffel
 using Plots
-pyplot()
 ```
 
 Now, we create a polygon shape by specifying its vertices. Note that the vertices must be provided in counter-clockwise order.
@@ -68,7 +67,6 @@ dz
 ```@setup mapconstruct2
 using SchwarzChristoffel
 using Plots
-pyplot()
 default(grid = false)
 ```
 
