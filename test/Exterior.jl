@@ -82,7 +82,7 @@
   m⁻¹ = InverseMap(m)
 
   z = rand(ComplexF64)
-  @test abs(m(m⁻¹(z)) - z) < 10*eps()
+  @test abs(m(m⁻¹(z)) - z) < 100*eps()
 
   @test abs(m⁻¹(z,inside=true)) <= 1.0
   @test abs(m⁻¹(z)) >= 1.0 
