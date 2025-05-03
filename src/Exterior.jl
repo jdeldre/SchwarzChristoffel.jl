@@ -19,6 +19,8 @@ using Statistics
 using ..MapTypes
 using ..Polygons
 
+import ..MapTypes: DerivativeMap
+
 include("Integration.jl")
 using .Integration
 
