@@ -2,7 +2,9 @@ module Exterior
 
 using NLsolve
 #using DifferentialEquations
-using OrdinaryDiffEq # using this module to reduce slow precompile of full DifferentialEquations package
+using SciMLBase
+using OrdinaryDiffEqTsit5 # using this module to reduce slow precompile of full DifferentialEquations package
+using OrdinaryDiffEqLowOrderRK
 
 using UnPack
 
@@ -16,6 +18,8 @@ using Statistics
 
 using ..MapTypes
 using ..Polygons
+
+import ..MapTypes: DerivativeMap
 
 include("Integration.jl")
 using .Integration
